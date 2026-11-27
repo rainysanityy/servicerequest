@@ -32,6 +32,9 @@ const EnvSchema = z.object({
   KEYCLOAK_REALM: z.string().regex(/^[a-z0-9-]{1,64}$/).default('itportal'),
   KEYCLOAK_ADMIN_CLIENT_ID: z.string().min(1).default('portal-admin-api'),
   KEYCLOAK_ADMIN_CLIENT_SECRET: z.string().optional(),
+  // Kommagetrennte E-Mail-Domains für Mitarbeitende (Selbstregistrierung). Leer = keine Einschränkung.
+  ALLOWED_EMAIL_DOMAINS: z.string().default('').transform((v) =>
+    v.split(',').map((d) => d.trim().toLowerCase()).filter((d) => /^[a-z0-9.-]+\.[a-z]{2,}$/.test(d))),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

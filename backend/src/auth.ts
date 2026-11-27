@@ -12,6 +12,7 @@ export interface AuthUser {
   username: string;
   name: string;
   email: string | null;
+  emailVerified?: boolean;
   roles: Role[];
 }
 
@@ -26,6 +27,8 @@ export interface AuthOptions {
   audience: string;
   allowedAzp: string;
   jwks: JWTVerifyGetKey;
+  /** Erlaubte E-Mail-Domains für Konten, die nur die Rolle "user" haben (Selbstregistrierung). */
+  allowedEmailDomains?: string[];
 }
 
 export function remoteJwks(url: string): JWTVerifyGetKey {
@@ -68,7 +71,7 @@ export async function verifyAccessToken(token: string, opts: AuthOptions): Promi
   const name = cleanLine(String(payload['name'] ?? username)).slice(0, 160) || username;
   const emailRaw = payload['email'];
   const email = typeof emailRaw === 'string' ? cleanLine(emailRaw).slice(0, 254) : null;
-  return { sub, username, name, email, roles: extractRoles(payload) };
+  return { sub, username, name, email, emailVerified: payload['email_verified'] === true, roles: extractRoles(payload) };
 }
 
 const lastProfileSync = new Map<string, number>();
@@ -117,8 +120,27 @@ export function registerAuth(app: FastifyInstance, pool: pg.Pool, opts: AuthOpti
       });
       throw forbidden();
     }
+    if (!emailDomainAllowed(req.user, opts.allowedEmailDomains)) {
+      await writeAudit(pool, req, {
+        action: 'auth.denied', entityType: 'user', entityId: req.user.username, outcome: 'denied',
+        details: { reason: 'email_domain_or_unverified' },
+      });
+      throw new HttpError(403, 'Zugriff nur mit bestätigter geschäftlicher E-Mail-Adresse', 'email_domain');
+    }
     await syncProfile(pool, req.user);
   });
+}
+
+/**
+ * Selbst registrierte Konten (nur Rolle "user") benötigen eine bestätigte E-Mail-Adresse
+ * aus einer erlaubten Domain. Support/Admin-Konten werden zentral vergeben und sind ausgenommen.
+ */
+export function emailDomainAllowed(user: AuthUser, domains: string[] | undefined): boolean {
+  if (!domains || domains.length === 0) return true;
+  if (user.roles.includes('first-level') || user.roles.includes('admin')) return true;
+  if (!user.email || user.emailVerified !== true) return false;
+  const domain = user.email.toLowerCase().split('@')[1] ?? '';
+  return domains.some((d) => domain === d || domain.endsWith(`.${d}`));
 }
 
 /** preHandler-Fabrik: verlangt mindestens eine der Rollen; protokolliert Ablehnungen. */

@@ -110,6 +110,7 @@ services:
       KEYCLOAK_INTERNAL_URL: http://keycloak:8080/auth
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-itportal}
       KEYCLOAK_ADMIN_CLIENT_ID: portal-admin-api
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-}
       KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_API_SECRET:?KEYCLOAK_ADMIN_API_SECRET fehlt}
       DB_HOST: db
       DB_PORT: "5432"
@@ -237,7 +238,6 @@ services:
       # Platzhalter für den Realm-Import (Redirect-URIs, Admin-API-Client, Registrierung, SMTP)
       PORTAL_HOSTNAME: ${PORTAL_HOSTNAME}
       KEYCLOAK_ADMIN_API_SECRET: ${KEYCLOAK_ADMIN_API_SECRET:?KEYCLOAK_ADMIN_API_SECRET fehlt - scripts/init-secrets.sh ausführen}
-      REGISTRATION_EMAIL_REGEX: ${REGISTRATION_EMAIL_REGEX:-^[^@ ]+@[^@ ]+$$}
       SMTP_HOST: ${SMTP_HOST:-mail.example.local}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_FROM: ${SMTP_FROM:-it-portal@example.local}

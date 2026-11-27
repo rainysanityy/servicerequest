@@ -24,6 +24,7 @@ const app = await buildApp({
     audience: env.OIDC_AUDIENCE,
     allowedAzp: env.OIDC_ALLOWED_AZP,
     jwks: remoteJwks(env.OIDC_JWKS_URL!),
+    allowedEmailDomains: env.ALLOWED_EMAIL_DOMAINS,
   },
 });
 

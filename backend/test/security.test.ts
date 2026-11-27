@@ -167,3 +167,16 @@ describe('Keycloak-Admin-Client', () => {
     expect(calls.some((c) => c.includes('search=an+na'))).toBe(true);
   });
 });
+
+describe('Selbstregistrierung: Domain-Prüfung', () => {
+  it('lässt nur bestätigte Firmenadressen zu, Support/Admin ausgenommen', async () => {
+    const { emailDomainAllowed } = await import('../src/auth.js');
+    const base = { sub: 's', username: 'u', name: 'U', roles: ['user'] as ('user' | 'first-level' | 'admin')[] };
+    expect(emailDomainAllowed({ ...base, email: 'a@example.com', emailVerified: true }, ['example.com'])).toBe(true);
+    expect(emailDomainAllowed({ ...base, email: 'a@sub.example.com', emailVerified: true }, ['example.com'])).toBe(true);
+    expect(emailDomainAllowed({ ...base, email: 'a@evil-example.com', emailVerified: true }, ['example.com'])).toBe(false);
+    expect(emailDomainAllowed({ ...base, email: 'a@example.com', emailVerified: false }, ['example.com'])).toBe(false);
+    expect(emailDomainAllowed({ ...base, email: 'x@gmail.com', emailVerified: true, roles: ['user', 'first-level'] }, ['example.com'])).toBe(true);
+    expect(emailDomainAllowed({ ...base, email: 'x@gmail.com', emailVerified: true }, [])).toBe(true);
+  });
+});

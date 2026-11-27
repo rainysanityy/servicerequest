@@ -105,7 +105,6 @@ jobs:
             -e KC_HTTP_RELATIVE_PATH=/auth -e KC_HEALTH_ENABLED=true \
             -e KC_BOOTSTRAP_ADMIN_USERNAME=bootstrap -e KC_BOOTSTRAP_ADMIN_PASSWORD=bootstrap \
             -e PORTAL_HOSTNAME=localhost -e KEYCLOAK_ADMIN_API_SECRET="$SECRET" \
-            -e 'REGISTRATION_EMAIL_REGEX=^[^@ ]+@example[.]com$' \
             quay.io/keycloak/keycloak:26.4 start-dev --import-realm
           for i in $(seq 1 90); do
             curl -sf "$KC/realms/itportal/.well-known/openid-configuration" >/dev/null && break; sleep 2
@@ -124,10 +123,6 @@ jobs:
           curl -sf -H "$H" "$A/users?max=5&briefRepresentation=true" >/dev/null
           curl -sf -H "$H" "$A/users/count" >/dev/null
           UHD=$(curl -sf -H "$H" "$A/group-by-path/IT-UHD" | jq -r .id)
-          # Domain-Beschränkung greift (falsche Domain -> abgelehnt)
-          code=$(curl -s -o /dev/null -w '%{http_code}' -H "$H" -H 'Content-Type: application/json' -X POST "$A/users" \
-            -d '{"username":"evil.test","email":"x@evil.org","firstName":"E","lastName":"V","enabled":true}')
-          test "$code" = 400
           # Benutzer anlegen, Standardgruppe prüfen, Rolle UHD vergeben/entziehen, sperren
           curl -sf -H "$H" -H 'Content-Type: application/json' -X POST "$A/users" \
             -d '{"username":"ci.user","email":"ci.user@example.com","firstName":"CI","lastName":"User","enabled":true}'
@@ -140,6 +135,19 @@ jobs:
           curl -sf -H "$H" "$A/users/$ID" | jq -e '.enabled == false' >/dev/null
           curl -sf -H "$H" -X POST "$A/users/$ID/logout"
           echo "Admin-API-Prüfungen erfolgreich"
+      - name: Standard-Client-Scopes und Audience für portal-frontend
+        run: |
+          TOKEN=$(curl -sf -d grant_type=client_credentials -d client_id=portal-admin-api -d "client_secret=$SECRET" \
+            "$KC/realms/itportal/protocol/openid-connect/token" | jq -r .access_token)
+          A="$KC/admin/realms/itportal"
+          ADM=$(curl -sf -d grant_type=password -d client_id=admin-cli -d username=bootstrap -d password=bootstrap \
+            "$KC/realms/master/protocol/openid-connect/token" | jq -r .access_token)
+          CID=$(curl -sf -H "Authorization: Bearer $ADM" "$A/clients?clientId=portal-frontend" | jq -r '.[0].id')
+          curl -sf -H "Authorization: Bearer $ADM" "$A/clients/$CID/default-client-scopes" | jq -e 'map(.name) | (index("roles") and index("profile") and index("email"))' >/dev/null
+          curl -sf -H "Authorization: Bearer $ADM" "$A/clients/$CID/protocol-mappers/models" | jq -e 'map(.config["included.client.audience"]) | index("portal-api")' >/dev/null
+          curl -sf -H "Authorization: Bearer $ADM" "$A" | jq -e '.registrationAllowed == true and .verifyEmail == true' >/dev/null
+          curl -sf -H "Authorization: Bearer $ADM" "$A/default-groups" | jq -e 'map(.path) | index("/Mitarbeitende")' >/dev/null
+          echo "Realm-Konfiguration korrekt"
       - name: Service-Account darf nicht in den Master-Realm
         run: |
           TOKEN=$(curl -sf -d grant_type=client_credentials -d client_id=portal-admin-api -d "client_secret=$SECRET" \
