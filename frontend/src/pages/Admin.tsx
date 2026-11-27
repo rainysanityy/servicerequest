@@ -448,7 +448,7 @@ function UsersAdmin() {
                 <tbody>{list.data.items.map((u) => (
                   <tr key={u.id}>
                     <td><strong>{u.name}</strong>{u.id === me.sub ? <span className="chip tone-secondary chip-inline">Sie</span> : null}<br />
-                      <span className="body-s muted">{u.email ?? '–'}{u.email && !u.emailVerified ? ' · E-Mail nicht bestätigt' : ''}</span></td>
+                      <span className="body-s muted">{u.email ?? '–'}{u.createdAt && Date.now() - new Date(u.createdAt).getTime() < 7 * 86_400_000 ? ' · neu registriert' : ''}</span></td>
                     <td className="mono">{u.username}</td>
                     <td>{u.enabled ? <span className="chip tone-success">aktiv</span> : <span className="chip tone-error">gesperrt</span>}</td>
                     <td>

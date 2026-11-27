@@ -123,22 +123,24 @@ export function registerAuth(app: FastifyInstance, pool: pg.Pool, opts: AuthOpti
     if (!emailDomainAllowed(req.user, opts.allowedEmailDomains)) {
       await writeAudit(pool, req, {
         action: 'auth.denied', entityType: 'user', entityId: req.user.username, outcome: 'denied',
-        details: { reason: 'email_domain_or_unverified' },
+        details: { reason: 'email_domain' },
       });
-      throw new HttpError(403, 'Zugriff nur mit bestätigter geschäftlicher E-Mail-Adresse', 'email_domain');
+      throw new HttpError(403, 'Zugriff nur mit geschäftlicher E-Mail-Adresse', 'email_domain');
     }
     await syncProfile(pool, req.user);
   });
 }
 
 /**
- * Selbst registrierte Konten (nur Rolle "user") benötigen eine bestätigte E-Mail-Adresse
- * aus einer erlaubten Domain. Support/Admin-Konten werden zentral vergeben und sind ausgenommen.
+ * Selbst registrierte Konten (nur Rolle "user") benötigen eine E-Mail-Adresse aus einer
+ * erlaubten Domain. Ohne Mailserver wird die Adresse NICHT bestätigt – die Prüfung ist eine
+ * Plausibilitätsprüfung; neue Konten werden zusätzlich im Admin-Bereich gesichtet.
+ * Support/Admin-Konten werden zentral vergeben und sind ausgenommen.
  */
 export function emailDomainAllowed(user: AuthUser, domains: string[] | undefined): boolean {
   if (!domains || domains.length === 0) return true;
   if (user.roles.includes('first-level') || user.roles.includes('admin')) return true;
-  if (!user.email || user.emailVerified !== true) return false;
+  if (!user.email) return false;
   const domain = user.email.toLowerCase().split('@')[1] ?? '';
   return domains.some((d) => domain === d || domain.endsWith(`.${d}`));
 }

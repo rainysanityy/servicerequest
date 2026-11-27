@@ -156,7 +156,7 @@ jobs:
           CID=$(curl -sf -H "Authorization: Bearer $ADM" "$A/clients?clientId=portal-frontend" | jq -r '.[0].id')
           curl -sf -H "Authorization: Bearer $ADM" "$A/clients/$CID/default-client-scopes" | jq -e 'map(.name) | (index("roles") and index("profile") and index("email"))' >/dev/null
           curl -sf -H "Authorization: Bearer $ADM" "$A/clients/$CID/protocol-mappers/models" | jq -e 'map(.config["included.client.audience"]) | index("portal-api")' >/dev/null
-          curl -sf -H "Authorization: Bearer $ADM" "$A" | jq -e '.registrationAllowed == true and .verifyEmail == true' >/dev/null
+          curl -sf -H "Authorization: Bearer $ADM" "$A" | jq -e '.registrationAllowed == true and .verifyEmail == false and .resetPasswordAllowed == false' >/dev/null
           curl -sf -H "Authorization: Bearer $ADM" "$A/default-groups" | jq -e 'map(.path) | index("/Mitarbeitende")' >/dev/null
           echo "Realm-Konfiguration korrekt"
       - name: Service-Account darf nicht in den Master-Realm

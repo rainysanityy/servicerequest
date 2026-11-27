@@ -319,9 +319,10 @@ Vergeben Sie die Rolle **Admin** nur nach Freigabe (Ticket) und nur an Personen 
 
 ### Selbstregistrierung
 
-* Neue Konten erhalten automatisch die Gruppe `/Mitarbeitende` (Rolle `user`) und müssen ihre E-Mail-Adresse bestätigen.
-* Nur Adressen aus den in `ALLOWED_EMAIL_DOMAINS` hinterlegten Domains erhalten Zugriff auf das Portal; andere Konten werden abgewiesen (Audit `auth.denied`, Grund `email_domain_or_unverified`).
-* Nicht bestätigte oder offensichtlich missbräuchliche Konten sperren Sie unter *Benutzer & Rollen* bzw. löschen sie in der Keycloak-Konsole.
+* Neue Konten erhalten automatisch die Gruppe `/Mitarbeitende` (Rolle `user`). Es gibt **keinen Mailserver**: E-Mail-Adressen werden nicht bestätigt, Passwörter nicht per E-Mail zurückgesetzt.
+* Nur Adressen aus den in `ALLOWED_EMAIL_DOMAINS` hinterlegten Domains erhalten Zugriff auf das Portal; andere Konten werden abgewiesen (Audit `auth.denied`, Grund `email_domain`). Da die Adresse nicht bestätigt wird, ist das eine **Plausibilitätsprüfung** – sichten Sie neue Konten (Hinweis *neu registriert* in der Liste) mindestens wöchentlich.
+* Unplausible oder missbräuchliche Konten (fremder Name zur Adresse, Doppelkonten) sperren Sie unter *Benutzer & Rollen* bzw. löschen sie in der Keycloak-Konsole.
+* **Passwort vergessen:** Nach Identitätsprüfung (z. B. Rückruf über Telefonverzeichnis) in Keycloak unter *Users → Benutzer → Credentials → Reset password* ein temporäres Passwort setzen.
 
 ## Audit-Log
 
@@ -349,7 +350,7 @@ Audit-Einträge sind in der Datenbank **unveränderlich** (keine Änderungs- ode
 |---|---|
 | Rolle vergeben/entziehen | im Portal: *Admin → Benutzer & Rollen* (alternativ Keycloak: Users → Benutzer → Groups) |
 | Konto sperren | im Portal: *Admin → Benutzer & Rollen → Sperren* |
-| Registrierung, E-Mail-Versand | Realm settings → Login (*User registration*, *Verify email*) / Email (SMTP) |
+| Registrierung | Realm settings → Login (*User registration* an, *Verify email* aus, *Forgot password* aus) |
 | Passwort zurücksetzen | Users → Benutzer → Credentials → Reset password (temporär) |
 | MFA zurücksetzen | Users → Benutzer → Credentials → OTP löschen |
 | Sitzungen beenden | Users → Benutzer → Sessions → Sign out |
@@ -379,6 +380,6 @@ Die Keycloak-Admin-Konsole ist nur aus dem in `ADMIN_ALLOW_CIDR` definierten Adm
 ## Quartalsweise (Administration)
 
 - [ ] Rollen-Rezertifizierung (siehe Abschnitt Benutzer & Rollen)
-- [ ] Selbst registrierte, nie bestätigte Konten (älter als 30 Tage) löschen
+- [ ] Neu registrierte Konten sichten (wöchentlich); unplausible Konten sperren
 - [ ] Keycloak: inaktive Konten, Admin-Konten, Clients und Redirect-URIs prüfen
 - [ ] Restore-Test aus Backup (gemeinsam mit Betrieb, siehe *Betriebskonzept*)

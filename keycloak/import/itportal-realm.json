@@ -4,9 +4,9 @@
   "enabled": true,
   "sslRequired": "all",
   "registrationAllowed": true,
-  "resetPasswordAllowed": true,
+  "resetPasswordAllowed": false,
   "rememberMe": false,
-  "verifyEmail": true,
+  "verifyEmail": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "editUsernameAllowed": false,
@@ -277,15 +277,6 @@
         ]
       }
     ]
-  },
-  "smtpServer": {
-    "host": "${SMTP_HOST:mail.example.local}",
-    "port": "${SMTP_PORT:587}",
-    "from": "${SMTP_FROM:it-portal@example.local}",
-    "fromDisplayName": "IT-Service-Portal",
-    "starttls": "true",
-    "ssl": "false",
-    "auth": "false"
   },
   "loginTheme": "itportal"
 }

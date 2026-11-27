@@ -11,6 +11,7 @@ import { ticketRoutes } from './routes/tickets.js';
 import { supportRoutes } from './routes/support.js';
 import { adminRoutes } from './routes/admin.js';
 import { userRoutes } from './routes/users.js';
+import { statsRoutes } from './routes/stats.js';
 import type { KeycloakAdmin } from './keycloakAdmin.js';
 
 export interface BuildOptions {
@@ -100,6 +101,7 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
   await app.register(ticketRoutes, { pool: opts.pool });
   await app.register(supportRoutes, { pool: opts.pool });
   await app.register(adminRoutes, { pool: opts.pool });
+  await app.register(statsRoutes, { pool: opts.pool });
   await app.register(userRoutes, { pool: opts.pool, kc: opts.kc ?? null });
 
   // --- Einheitliche Fehlerbehandlung, keine internen Details nach außen ----

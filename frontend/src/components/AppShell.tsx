@@ -14,6 +14,7 @@ function useNav(): NavEntry[] {
     { to: '/', label: 'Start', icon: 'home', end: true },
     { to: '/katalog', label: 'Katalog', icon: 'category' },
     { to: '/tickets', label: 'Meine Tickets', icon: 'list' },
+    { to: '/statistik', label: 'Statistik', icon: 'chart' },
   ];
   if (hasRole('first-level', 'admin')) items.push({ to: '/support', label: 'Support', icon: 'support' });
   if (hasRole('admin')) items.push({ to: '/admin', label: 'Admin', icon: 'admin' });

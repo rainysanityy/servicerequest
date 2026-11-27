@@ -7,7 +7,7 @@ Alle nennenswerten Änderungen an diesem Projekt. Format angelehnt an [Keep a Ch
 ### Hinzugefügt
 - Keycloak-Login-Theme `itportal` im Material 3 Expressive Design (Login, Registrierung, Passwort-Reset, OTP; Dark/Light nach Systemeinstellung)
 - Roboto lokal eingebunden (Portal und Login), keine externen Schriftquellen
-- Selbstregistrierung über Keycloak (E-Mail-Bestätigung, Standardgruppe `/Mitarbeitende`, Domain-Prüfung `ALLOWED_EMAIL_DOMAINS` im Backend)
+- Selbstregistrierung über Keycloak ohne Mailserver (keine E-Mail-Bestätigung, kein Passwort-Reset per Mail; Standardgruppe `/Mitarbeitende`, Domain-Prüfung `ALLOWED_EMAIL_DOMAINS` im Backend)
 - Admin-Bereich *Benutzer & Rollen*: Rollen Mitarbeitende/UHD/Admin vergeben, Konten sperren/entsperren (Service-Account `portal-admin-api`), Schutzregeln, Audit
 - CI-Integrationstest gegen echten Keycloak
 - Katalog v2 (Migration `003_catalog_v2.sql`):

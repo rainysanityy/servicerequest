@@ -82,7 +82,7 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder
 ## Funktionen
 
 **Für Mitarbeitende**
-- Anmeldung und **Selbstregistrierung** über Keycloak im eigenen Material-3-Theme (Dark/Light) mit E-Mail-Bestätigung; Zugriff nur mit geschäftlicher E-Mail-Domain (`ALLOWED_EMAIL_DOMAINS`)
+- Anmeldung und **Selbstregistrierung** über Keycloak im eigenen Material-3-Theme (Dark/Light), ohne Mailserver; Zugriff nur mit geschäftlicher E-Mail-Domain (`ALLOWED_EMAIL_DOMAINS`), neue Konten werden im Admin-Bereich gesichtet
 - Startseite mit Kategorien, Schnellzugriff und Hinweisen auf offene Rückfragen
 - Service-Katalog mit Suche und geführten Formularen (Pflichtfelder, Formatprüfung, bedingte Felder, Befristung von Berechtigungen):
 

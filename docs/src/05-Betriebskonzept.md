@@ -136,7 +136,6 @@ vi .env
 | `KEYCLOAK_DB_PASSWORD` | Keycloak-DB | zufällig erzeugt |
 | `KEYCLOAK_ADMIN_API_SECRET` | Secret des Service-Accounts `portal-admin-api` (Benutzer & Rollen) | zufällig erzeugt |
 | `ALLOWED_EMAIL_DOMAINS` | Domains für selbst registrierte Konten (kommagetrennt) | `firma.de,firma-gruppe.de` |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM` | Mailversand (E-Mail-Bestätigung, Passwort-Reset) | `mail.firma.de` / `587` |
 | `RATE_LIMIT_MAX` | API-Requests/Minute je IP | `300` |
 | `RETENTION_TICKET_DAYS` | Anonymisierung abgeschlossener Tickets | `1095` |
 | `RETENTION_AUDIT_DAYS` | Löschung Audit-Log | `365` |
@@ -168,12 +167,12 @@ Beim ersten Start legt PostgreSQL die Rollen `portal_migrator` und `portal_app` 
 3. **Bootstrap-Konto löschen** und `KEYCLOAK_ADMIN_PASSWORD` aus `.env` entfernen.
 4. Realm `itportal` prüfen: Clients `portal-frontend` (öffentlich, PKCE S256, Redirect-URI `https://<host>/*`) und `portal-api` (Audience), Client-Scope `portal-api-audience`, Gruppen und Realm-Rollen.
 5. **Benutzeranbindung:** *User Federation → LDAP/Active Directory* (Modus *READ_ONLY*, LDAPS, Bind-Konto mit Leserechten) einrichten; Gruppen über *group-ldap-mapper* auf `/Mitarbeitende`, `/IT-UHD`, `/IT-Portal-Admins` abbilden **oder** Gruppenmitgliedschaften direkt in Keycloak pflegen.
-6. SMTP prüfen (*Realm settings → Email*, Werte aus `SMTP_*`) und eine Testmail senden – ohne funktionierenden Mailversand ist die Selbstregistrierung (E-Mail-Bestätigung) nicht nutzbar.
+6. **Kein Mailserver:** Die Selbstregistrierung arbeitet ohne E-Mail-Bestätigung; „Passwort vergessen“ ist deaktiviert. Passwörter setzt die Administration in Keycloak zurück (temporäres Passwort).
 7. Ersten Portal-Admin festlegen: dem eigenen Konto in Keycloak die Gruppe `/IT-Portal-Admins` zuweisen. Alle weiteren Rollen werden danach im Portal unter *Admin → Benutzer & Rollen* vergeben.
 8. Demo-Benutzer (nur Test) aus `keycloak/import/` entfernen.
 9. **Login-Theme:** Das Image enthält das Theme `itportal` (Material 3 Expressive, Dark/Light nach Systemeinstellung, Schrift lokal eingebunden). Der Realm-Import setzt es automatisch; bei bestehenden Realms unter *Realm settings → Themes → Login theme* `itportal` wählen. Anpassungen (Farben, Texte) erfolgen in `keycloak/themes/itportal/login/` (CSS-Variablen in `resources/css/itportal.css`, Texte in `messages/`), danach Image neu bauen.
 
-**Bestehende Installation (Realm bereits importiert):** Der Import überschreibt keinen vorhandenen Realm. Für Selbstregistrierung und Rollenverwaltung in der Admin-Konsole einmalig: *Realm settings → Login*: „User registration“ und „Verify email“ aktivieren; *Realm settings → User registration → Default groups*: `/Mitarbeitende`; *Clients → Create*: `portal-admin-api` (Client authentication an, nur *Service accounts roles*), Secret = `KEYCLOAK_ADMIN_API_SECRET`; *Service account roles*: `realm-management` → `query-users`, `view-users`, `query-groups`, `manage-users`.
+**Bestehende Installation (Realm bereits importiert):** Der Import überschreibt keinen vorhandenen Realm. Für Selbstregistrierung und Rollenverwaltung in der Admin-Konsole einmalig: *Realm settings → Login*: „User registration“ aktivieren, „Verify email“ und „Forgot password“ deaktivieren; *Realm settings → User registration → Default groups*: `/Mitarbeitende`; *Clients → Create*: `portal-admin-api` (Client authentication an, nur *Service accounts roles*), Secret = `KEYCLOAK_ADMIN_API_SECRET`; *Service account roles*: `realm-management` → `query-users`, `view-users`, `query-groups`, `manage-users`.
 
 ::: warning
 Der Realm-Import erfolgt nur, wenn der Realm noch nicht existiert. Spätere Änderungen werden **in der Admin-Konsole** vorgenommen und über den Export (`kc.sh export --realm itportal`) versioniert.

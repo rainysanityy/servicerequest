@@ -235,12 +235,9 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
       KC_LOG_LEVEL: INFO
-      # Platzhalter für den Realm-Import (Redirect-URIs, Admin-API-Client, Registrierung, SMTP)
+      # Platzhalter für den Realm-Import (Redirect-URIs, Admin-API-Client)
       PORTAL_HOSTNAME: ${PORTAL_HOSTNAME}
       KEYCLOAK_ADMIN_API_SECRET: ${KEYCLOAK_ADMIN_API_SECRET:?KEYCLOAK_ADMIN_API_SECRET fehlt - scripts/init-secrets.sh ausführen}
-      SMTP_HOST: ${SMTP_HOST:-mail.example.local}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_FROM: ${SMTP_FROM:-it-portal@example.local}
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-kc-bootstrap}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       JAVA_OPTS_KC_HEAP: "-XX:MaxRAMPercentage=70"

@@ -69,7 +69,7 @@ Dieses Konzept ist eine fachlich-technische Vorlage. Die abschließende rechtlic
 | Kommunikationsdaten | Kommentare, interne Notizen, Verlaufsereignisse | Person / Support | Z2, Z3 |
 | Audit-Daten | Akteur (ID, Name, Rollen), Aktion, Objekt, Ergebnis, Zeitpunkt, Request-ID, IP-Adresse | System | Z3, Z4 |
 | Technische Protokolle | IP-Adresse, Zeit, Pfad (ohne Parameter), Statuscode, User-Agent | Reverse Proxy, Backend | Z4 |
-| Registrierungsdaten | Vorname, Nachname, geschäftliche E-Mail-Adresse, Benutzername, Zeitpunkt der Registrierung und E-Mail-Bestätigung | betroffene Person (Selbstregistrierung in Keycloak) | Z1, Z4 |
+| Registrierungsdaten | Vorname, Nachname, geschäftliche E-Mail-Adresse, Benutzername, Zeitpunkt der Registrierung | betroffene Person (Selbstregistrierung in Keycloak) | Z1, Z4 |
 | Authentisierungsdaten | Login-Ereignisse, Fehlversuche, IP-Adresse, Sitzungen; Passwort-Hash und TOTP-Geheimnis ausschließlich in Keycloak | Keycloak | Z4 |
 | Präferenzen | Farbmodus/Farbpalette (nur im Browser, `localStorage`) | Endgerät | Bedienkomfort |
 
@@ -140,7 +140,7 @@ Das Portal ist objektiv geeignet, Verhalten oder Leistung von Beschäftigten zu 
 | Audit-Log-Einträge | **365 Tage** (`RETENTION_AUDIT_DAYS`) | Löschung im täglichen Lauf (einzige zulässige Löschung) |
 | IP-Adressen im Audit-Log | **90 Tage** (`RETENTION_IP_DAYS`) | Feld wird geleert |
 | Keycloak-Anmeldeereignisse | 90 Tage | Realm-Einstellung `eventsExpiration` |
-| Selbst registrierte, nie bestätigte Konten | 30 Tage | Löschung im Rahmen der monatlichen Admin-Checkliste |
+| Gesperrte, unplausible Registrierungen | 30 Tage nach Sperrung | Löschung in Keycloak im Rahmen der monatlichen Admin-Checkliste |
 | System-/Containerprotokolle (journald) | 180 Tage | `MaxRetentionSec=180day` |
 | Datensicherungen | 30 Tage rollierend (`BACKUP_RETENTION_DAYS`) | Rotation im Backup-Skript; Löschungen wirken spätestens nach 30 Tagen auch in Backups |
 | Darstellungspräferenz | bis zur Löschung durch den Nutzer | Browserdaten löschen |

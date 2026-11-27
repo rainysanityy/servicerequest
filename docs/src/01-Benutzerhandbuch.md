@@ -51,6 +51,7 @@ Das Portal verwendet die zentrale Anmeldung des Unternehmens (**Single Sign-On �
 
 * Die IT fragt Sie **niemals** per E-Mail oder Telefon nach Ihrem Passwort.
 * Nach **5 Fehlversuchen** wird Ihr Konto vorübergehend gesperrt (ca. 15 Minuten).
+* **Passwort vergessen?** Ein Zurücksetzen per E-Mail gibt es nicht. Wenden Sie sich an den Service Desk; die IT setzt ein temporäres Passwort, das Sie bei der nächsten Anmeldung ändern.
 * Ihre Sitzung endet automatisch nach 30 Minuten Inaktivität. Melden Sie sich an gemeinsam genutzten Geräten immer aktiv ab.
 :::
 
@@ -60,11 +61,10 @@ Haben Sie noch kein Konto für das Portal, können Sie sich selbst registrieren:
 
 1. Öffnen Sie die Portal-Adresse. Auf der Anmeldeseite klicken Sie auf **„Registrieren“**.
 2. Geben Sie **Vorname, Nachname, Ihre geschäftliche E-Mail-Adresse, einen Benutzernamen** (Kleinbuchstaben, Ziffern, Punkt, Bindestrich) und ein **Passwort** ein.
-3. Sie erhalten eine E-Mail mit einem Bestätigungslink. Klicken Sie auf den Link, um Ihre Adresse zu bestätigen.
-4. Danach können Sie das Portal mit der Rolle **Mitarbeitende** nutzen.
+3. Klicken Sie auf **„Konto erstellen“**. Sie werden direkt angemeldet und können das Portal mit der Rolle **Mitarbeitende** nutzen.
 
 ::: info
-Zugriff erhalten nur Konten mit **bestätigter geschäftlicher E-Mail-Adresse** (z. B. `@firma.de`). Private Adressen werden abgewiesen. Rollen für den Support (UHD) oder die Administration werden nicht bei der Registrierung vergeben, sondern von der Portal-Administration zugewiesen.
+Zugriff erhalten nur Konten mit **geschäftlicher E-Mail-Adresse** (z. B. `@firma.de`); private Adressen werden abgewiesen. Verwenden Sie ausschließlich Ihre eigene Adresse – neue Konten werden von der IT gesichtet. Rollen für den Support (UHD) oder die Administration werden nicht bei der Registrierung vergeben, sondern von der Portal-Administration zugewiesen.
 :::
 
 ## Abmelden und Konto verwalten

@@ -12,6 +12,7 @@ const MyTickets = lazy(() => import('./pages/MyTickets'));
 const TicketDetail = lazy(() => import('./pages/TicketDetail'));
 const SupportQueue = lazy(() => import('./pages/SupportQueue'));
 const Admin = lazy(() => import('./pages/Admin'));
+const Statistics = lazy(() => import('./pages/Statistics'));
 
 function Forbidden() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/anfrage/:itemId" element={<RequestForm />} />
           <Route path="/tickets" element={<MyTickets />} />
           <Route path="/tickets/:id" element={<TicketDetail />} />
+          <Route path="/statistik" element={<Statistics />} />
           <Route path="/support" element={<RequireRole roles={['first-level', 'admin']}><SupportQueue /></RequireRole>} />
           <Route path="/support/tickets/:id" element={<RequireRole roles={['first-level', 'admin']}><TicketDetail supportView /></RequireRole>} />
           <Route path="/admin/*" element={<RequireRole roles={['admin']}><Admin /></RequireRole>} />

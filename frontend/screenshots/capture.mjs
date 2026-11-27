@@ -159,6 +159,37 @@ const audit = { page: 1, pageSize: 25, total: 1284, items: [
   actor_roles: actor?.roles ?? [], action, entity_type, entity_id, outcome, client_ip: ip, details,
 })) };
 
+// ------------------------------------------------------------------ Statistik-Beispieldaten
+function wave(n, base, amp, seed) { return Array.from({ length: n }, (_, i) => Math.max(0, Math.round(base + amp * Math.sin((i + seed) / 2.2) + ((i * 7 + seed * 3) % 5) - 2))); }
+function statsFixture(persona) {
+  const weeks = Array.from({ length: 12 }, (_, i) => new Date(now - (11 - i) * 7 * 86400_000).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }));
+  const days30 = Array.from({ length: 30 }, (_, i) => new Date(now - (29 - i) * 86400_000).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }));
+  const resolvedW = wave(12, 62, 14, 1), created = wave(30, 13, 5, 0), resolvedD = wave(30, 12, 4, 2);
+  const st = (code, value) => ({ code, label: STATUS[code][0], value });
+  const out = { scope: persona.roles.includes('admin') ? 'admin' : persona.roles.includes('first-level') ? 'support' : 'user', days: 30,
+    general: { openNow: 87, resolved: 274, slaPct: 92.4, avgResolutionHours: 19.6, medianFirstResponseHours: 1.3,
+      resolvedWeekly: weeks.map((label, i) => ({ label, value: resolvedW[i] })),
+      resolutionByCategory: [['Hardware', 41.2, 88], ['Software', 9.8, 61], ['Telefonie', 22.5, 14], ['Berechtigungen & VPN', 6.1, 57], ['Benutzerkonten', 30.4, 12], ['Server & VMs', 52.0, 9], ['Zertifikate', 14.7, 11], ['Allgemeine IT-Anfrage', 3.2, 22]]
+        .map(([label, value, n]) => ({ label, value, n })),
+      mine: [st('new', 1), st('in_progress', 1), st('waiting_for_user', 1), st('waiting_for_approval', 1), st('resolved', 1), st('closed', 7), st('rejected', 0), st('withdrawn', 1)] } };
+  if (out.scope !== 'user') out.support = {
+    openByStatus: [st('new', 18), st('in_progress', 41), st('waiting_for_user', 12), st('waiting_for_approval', 9), st('resolved', 7)],
+    openByPriority: [['low', 21], ['medium', 44], ['high', 17], ['critical', 5]].map(([code, value]) => ({ code, value })),
+    flow: days30.map((label, i) => ({ label, created: created[i], resolved: resolvedD[i] })),
+    aging: [['< 1 Tag', 26], ['1–3 Tage', 29], ['3–7 Tage', 18], ['7–14 Tage', 9], ['> 14 Tage', 5]].map(([label, value]) => ({ label, value })),
+    categoryVolume: [['Hardware', 96], ['Software', 64], ['Telefonie', 15], ['Berechtigungen & VPN', 61], ['Benutzerkonten', 13], ['Server & VMs', 10], ['Zertifikate', 12], ['Allgemeine IT-Anfrage', 31]].map(([label, value]) => ({ label, value })),
+    slaByPriority: [['low', 52, 97.1, 6.5], ['medium', 141, 93.6, 2.1], ['high', 64, 88.2, 0.7], ['critical', 17, 82.4, 0.3]].map(([code, resolved, sla_pct, median_first_response_h]) => ({ code, resolved, sla_pct, median_first_response_h })),
+    unassigned: 11, overdue: 6, waitingForUser: 12 };
+  if (out.scope === 'admin') out.admin = {
+    topItems: [['Hardware-Bundle (mehrere Geräte)', 38], ['Software anfordern', 34], ['Netzlaufwerk-Zugriff', 29], ['APC', 24], ['VPN-Zugang', 21], ['Allgemeine Anfrage / Störung', 19], ['Monitor', 16], ['Mail-Postfach-Zugriff', 14], ['Neues Benutzerkonto', 13], ['Telefon bestellen (Softphone / Hardphone)', 12]].map(([label, value]) => ({ label, value })),
+    outcomes: [st('closed', 236), st('rejected', 19), st('withdrawn', 11)],
+    usersWeekly: weeks.map((label, i) => ({ label, value: wave(12, 9, 4, 3)[i] })),
+    users: { total: 412, active_30d: 287, admins: 2, uhd: 6, users: 404 },
+    deniedFlow: days30.map((label, i) => ({ label, value: [0, 1, 0, 2, 0, 0, 1][i % 7] + (i === 21 ? 9 : 0) })),
+    topActions: [['ticket.comment', 512], ['ticket.status', 431], ['ticket.create', 298], ['ticket.assign', 244], ['ticket.priority', 61], ['admin.user.role', 14], ['authz.denied', 13], ['admin.catalog.update', 6]].map(([label, value]) => ({ label, value })) };
+  return out;
+}
+
 // ------------------------------------------------------------------ API-Router
 function apiResponse(path, persona) {
   const p = path.replace(/\?.*$/, '');
@@ -187,6 +218,7 @@ function apiResponse(path, persona) {
     { id: 's2', category_id: null, title: 'Neustart & Updates', body: '…' }];
   if (p === '/api/admin/workflow') return workflow;
   if (p === '/api/admin/users/status') return { enabled: true };
+  if (p === '/api/stats') return statsFixture(persona);
   if (p === '/api/admin/roles') return {
     expectedRoles: [
       { role: 'user', keycloakGroup: '/Mitarbeitende', description: 'Requests erstellen, eigene Tickets einsehen/kommentieren (Standard bei Selbstregistrierung)' },
@@ -308,6 +340,11 @@ try {
   });
   await shot(anna, '/tickets?filter=all', '07-meine-tickets');
   await shot(anna, `/tickets/${SR_DETAIL.id}`, '08-ticket-detail');
+  await shot(anna, '/statistik', '25-statistik-mitarbeitende', async (page) => {
+    const bar = await page.$('.viz-plot svg rect[fill=transparent]:nth-of-type(1)');
+    const box = await page.locator('.viz-plot').first().boundingBox();
+    if (box) await page.mouse.move(box.x + box.width * 0.78, box.y + box.height * 0.6);
+  });
   await anna.close();
 
   const annaLight = await newContext(browser, P.anna);
@@ -326,6 +363,14 @@ try {
   await shot(alex, '/admin/workflow', '12-admin-workflow');
   await shot(alex, '/admin/audit', '13-admin-audit');
   await shot(alex, '/admin/rollen', '16-admin-benutzer-rollen');
+  await shot(alex, '/statistik', '22-statistik-admin');
+  await shot(alex, '/statistik', '23-statistik-support', async (page) => {
+    await page.evaluate(() => { const h = [...document.querySelectorAll('h2')].find((e) => e.textContent?.includes('Support-Betrieb')); h?.scrollIntoView(); window.scrollBy(0, -80); });
+  });
+  await shot(alex, '/statistik', '24-statistik-administration', async (page) => {
+    await page.evaluate(() => { const h = [...document.querySelectorAll('h2')].find((e) => e.textContent?.includes('Administration')); h?.scrollIntoView(); window.scrollBy(0, -80); });
+    await page.hover('.viz-hbars li:nth-child(2)');
+  });
   await alex.close();
 
   const mobile = await newContext(browser, P.anna, { dark: true, mobile: true });
