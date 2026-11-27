@@ -2,7 +2,7 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Build (Dev-Dependencies, TypeScript-Kompilierung, Tests)
 # -----------------------------------------------------------------------------
-FROM docker.io/library/node:22-alpine AS build
+FROM docker.io/library/node:26-alpine AS build
 WORKDIR /app
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false NPM_CONFIG_FUND=false
 COPY package.json package-lock.json* ./
