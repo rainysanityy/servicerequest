@@ -41,7 +41,7 @@ Dieses Handbuch richtet sich an alle Mitarbeitenden und beschreibt:
 Das Portal verwendet die zentrale Anmeldung des Unternehmens (**Single Sign-On über Keycloak**). Sie benötigen kein separates Passwort.
 
 1. Öffnen Sie die Portal-Adresse im Browser (z. B. `https://portal.example.local`). Unterstützt werden aktuelle Versionen von Edge, Chrome, Firefox und Safari.
-2. Sie werden automatisch zur Anmeldeseite weitergeleitet. Prüfen Sie, dass die Adresszeile **dieselbe Portal-Domain** und ein **Schloss-Symbol** zeigt.
+2. Sie werden automatisch zur Anmeldeseite im Portal-Design weitergeleitet (heller oder dunkler Modus je nach Systemeinstellung). Prüfen Sie, dass die Adresszeile **dieselbe Portal-Domain** und ein **Schloss-Symbol** zeigt.
 3. Geben Sie **Benutzername oder E-Mail-Adresse** und Ihr **Passwort** ein.
 4. Beim **ersten Login** werden Sie aufgefordert, Ihr Initialpasswort zu ändern. Das neue Passwort muss mindestens 12 Zeichen lang sein und Groß-/Kleinbuchstaben, Ziffern und Sonderzeichen enthalten.
 5. Nach erfolgreicher Anmeldung gelangen Sie auf die Startseite.

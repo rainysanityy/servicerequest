@@ -171,6 +171,7 @@ Beim ersten Start legt PostgreSQL die Rollen `portal_migrator` und `portal_app` 
 6. SMTP prüfen (*Realm settings → Email*, Werte aus `SMTP_*`) und eine Testmail senden – ohne funktionierenden Mailversand ist die Selbstregistrierung (E-Mail-Bestätigung) nicht nutzbar.
 7. Ersten Portal-Admin festlegen: dem eigenen Konto in Keycloak die Gruppe `/IT-Portal-Admins` zuweisen. Alle weiteren Rollen werden danach im Portal unter *Admin → Benutzer & Rollen* vergeben.
 8. Demo-Benutzer (nur Test) aus `keycloak/import/` entfernen.
+9. **Login-Theme:** Das Image enthält das Theme `itportal` (Material 3 Expressive, Dark/Light nach Systemeinstellung, Schrift lokal eingebunden). Der Realm-Import setzt es automatisch; bei bestehenden Realms unter *Realm settings → Themes → Login theme* `itportal` wählen. Anpassungen (Farben, Texte) erfolgen in `keycloak/themes/itportal/login/` (CSS-Variablen in `resources/css/itportal.css`, Texte in `messages/`), danach Image neu bauen.
 
 **Bestehende Installation (Realm bereits importiert):** Der Import überschreibt keinen vorhandenen Realm. Für Selbstregistrierung und Rollenverwaltung in der Admin-Konsole einmalig: *Realm settings → Login*: „User registration“ und „Verify email“ aktivieren; *Realm settings → User registration → Default groups*: `/Mitarbeitende`; *Clients → Create*: `portal-admin-api` (Client authentication an, nur *Service accounts roles*), Secret = `KEYCLOAK_ADMIN_API_SECRET`; *Service account roles*: `realm-management` → `query-users`, `view-users`, `query-groups`, `manage-users`.
 

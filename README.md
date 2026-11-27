@@ -58,7 +58,11 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder
 <table>
   <tr>
     <td width="50%"><img src="docs/screenshots/16-admin-benutzer-rollen.png" alt="Admin: Benutzer und Rollen"><br><sub><b>Benutzer & Rollen</b> – Mitarbeitende / UHD / Admin vergeben, sperren</sub></td>
-    <td width="50%"><img src="docs/screenshots/17-registrierung-dunkel.png" alt="Selbstregistrierung in Keycloak"><br><sub><b>Selbstregistrierung</b> (Keycloak, mit E-Mail-Bestätigung)</sub></td>
+    <td width="50%"><img src="docs/screenshots/17-registrierung-dunkel.png" alt="Selbstregistrierung in Keycloak"><br><sub><b>Selbstregistrierung</b> – eigenes Keycloak-Theme, mit E-Mail-Bestätigung</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/19-login-dunkel.png" alt="Keycloak-Login im Darkmode"><br><sub><b>Anmeldung</b> – Keycloak-Theme <code>itportal</code>, Darkmode</sub></td>
+    <td width="50%"><img src="docs/screenshots/20-login-hell.png" alt="Keycloak-Login im Light Mode"><br><sub><b>Anmeldung</b> – Light Mode (folgt der Systemeinstellung)</sub></td>
   </tr>
 </table>
 
@@ -68,7 +72,8 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder
 
 <p align="center">
   <img src="docs/screenshots/14-mobil-startseite.png" alt="Mobile Startseite" width="260">&nbsp;&nbsp;
-  <img src="docs/screenshots/15-mobil-ticket.png" alt="Mobile Ticketansicht" width="260"><br>
+  <img src="docs/screenshots/15-mobil-ticket.png" alt="Mobile Ticketansicht" width="260">&nbsp;&nbsp;
+  <img src="docs/screenshots/21-login-mobil.png" alt="Mobile Anmeldung" width="260"><br>
   <sub><b>Mobile Ansicht</b> mit Navigationsleiste unten</sub>
 </p>
 
@@ -77,7 +82,7 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder
 ## Funktionen
 
 **Für Mitarbeitende**
-- **Selbstregistrierung** über Keycloak mit E-Mail-Bestätigung; Zugriff nur mit geschäftlicher E-Mail-Domain (`ALLOWED_EMAIL_DOMAINS`)
+- Anmeldung und **Selbstregistrierung** über Keycloak im eigenen Material-3-Theme (Dark/Light) mit E-Mail-Bestätigung; Zugriff nur mit geschäftlicher E-Mail-Domain (`ALLOWED_EMAIL_DOMAINS`)
 - Startseite mit Kategorien, Schnellzugriff und Hinweisen auf offene Rückfragen
 - Service-Katalog mit Suche und geführten Formularen (Pflichtfelder, Formatprüfung, bedingte Felder, Befristung von Berechtigungen):
 
@@ -200,7 +205,7 @@ Die PDFs werden aus den Markdown-Quellen in [`docs/src/`](docs/src/) erzeugt: `.
 │   └── migrations/       SQL-Schema & Stammdaten
 ├── frontend/             React-SPA, Designsystem in src/theme/
 ├── db/init/              PostgreSQL-Rollen (Migrator / App)
-├── keycloak/             Image, Realm-Import, Demo-Benutzer
+├── keycloak/             Image, Realm-Import, Login-Theme (M3), Demo-Benutzer
 ├── proxy/                nginx-Konfiguration, Templates, Security-Header
 ├── scripts/              Secrets, Zertifikat, Backup/Restore, Smoke-Test
 ├── fedora-hardening/     Ansible-Playbook, Bash-Skripte, Konfigurationsdateien
