@@ -9,7 +9,7 @@
 
 Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware, Software, Berechtigungen und allgemeine Anfragen** – mit Keycloak-Anmeldung (OIDC + PKCE), rollenbasierter Zugriffskontrolle, einer Oberfläche im **Material 3 Expressive Design** (Dark/Light Mode) und gehärtetem Betrieb mit **rootless Docker auf Fedora Server** nach BSI IT-Grundschutz und NIST SP 800-53.
 
-> **Projektstatus:** Release 1.0.0 (Erstfassung). Datenbankschema, Rollen- und Rechtekonzept sowie die Kernlogik sind geprüft; ein vollständiger End-to-End-Test (Container-Build, Keycloak-Login im Browser) steht noch aus und wird über die [CI-Pipeline](.github/workflows/ci.yml) bzw. die Abnahmeliste im Betriebskonzept abgedeckt.
+> **Projektstatus:** Release 1.0.0. Die [CI-Pipeline](.github/workflows/ci.yml) ist grün: Typecheck, Unit-Tests und Build von Backend und Frontend, Migrationen und Rechteprüfung gegen PostgreSQL 17 sowie der Build aller Container-Images. Noch offen ist ein End-to-End-Test im Browser mit Keycloak-Login (siehe Abnahmeliste im Betriebskonzept).
 
 ---
 
