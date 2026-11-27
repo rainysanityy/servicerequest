@@ -15,6 +15,7 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware, Software, Be
 
 ## Inhalt
 
+- [Screenshots](#screenshots)
 - [Funktionen](#funktionen)
 - [Architektur](#architektur)
 - [Schnellstart](#schnellstart)
@@ -24,6 +25,39 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware, Software, Be
 - [Repository-Struktur](#repository-struktur)
 - [Entwicklung](#entwicklung)
 - [Betrieb](#betrieb)
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/01-startseite-hell.png" alt="Startseite im hellen Modus"><br><sub><b>Startseite</b> – heller Modus</sub></td>
+    <td width="50%"><img src="docs/screenshots/02-startseite-dunkel.png" alt="Startseite im dunklen Modus"><br><sub><b>Startseite</b> – dunkler Modus</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/03-katalog.png" alt="Service-Katalog"><br><sub><b>Service-Katalog</b> mit Suche und Kategorien</sub></td>
+    <td><img src="docs/screenshots/04-anfrage-formular.png" alt="Geführtes Anfrageformular mit Validierung"><br><sub><b>Geführtes Formular</b> mit Eingabeprüfung</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/05-meine-tickets.png" alt="Meine Tickets"><br><sub><b>Meine Tickets</b> – Filter, Suche, Status</sub></td>
+    <td><img src="docs/screenshots/06-ticket-detail.png" alt="Ticketdetails aus Nutzersicht"><br><sub><b>Ticketdetails</b> – Lösung bestätigen oder erneut öffnen</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/07-support-queue.png" alt="Support-Queue im dunklen Modus"><br><sub><b>Support-Arbeitsbereich</b> – Kennzahlen, Filter, SLA</sub></td>
+    <td><img src="docs/screenshots/08-support-bearbeitung.png" alt="Ticketbearbeitung im Support"><br><sub><b>Bearbeitung</b> – Zuweisung, Priorität, Workflow, Standardlösungen</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/09-admin-workflow.png" alt="Admin: Status und Workflow"><br><sub><b>Administration</b> – Status & Workflow</sub></td>
+    <td><img src="docs/screenshots/10-admin-audit.png" alt="Admin: Audit-Log"><br><sub><b>Audit-Log</b> mit Integritätsprüfung</sub></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/11-mobil-startseite.png" alt="Mobile Startseite" width="260">&nbsp;&nbsp;
+  <img src="docs/screenshots/12-mobil-ticket.png" alt="Mobile Ticketansicht" width="260"><br>
+  <sub><b>Mobile Ansicht</b> mit Navigationsleiste unten</sub>
+</p>
+
+<sub>Die Aufnahmen entstehen automatisch über den Workflow <a href=".github/workflows/screenshots.yml">Screenshots</a> (Playwright). Keycloak und API werden dabei mit Beispieldaten simuliert; alle Namen und Tickets sind fiktiv.</sub>
 
 ## Funktionen
 
@@ -141,8 +175,8 @@ Die PDFs werden aus den Markdown-Quellen in [`docs/src/`](docs/src/) erzeugt: `.
 ├── proxy/                nginx-Konfiguration, Templates, Security-Header
 ├── scripts/              Secrets, Zertifikat, Backup/Restore, Smoke-Test
 ├── fedora-hardening/     Ansible-Playbook, Bash-Skripte, Konfigurationsdateien
-├── docs/                 Markdown-Quellen, Grafiken, PDFs, Build-Skript
-├── .github/              CI-Workflow, Dependabot
+├── docs/                 Markdown-Quellen, Grafiken, PDFs, Screenshots, Build-Skript
+├── .github/              CI- und Screenshot-Workflow, Dependabot
 ├── docker-compose.yml
 └── .env.example
 ```

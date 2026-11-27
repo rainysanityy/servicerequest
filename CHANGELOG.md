@@ -2,6 +2,16 @@
 
 Alle nennenswerten Änderungen an diesem Projekt. Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [Unveröffentlicht]
+
+### Hinzugefügt
+- UI-Screenshots in der README, automatisch erzeugt über den Workflow „Screenshots“ (Playwright, simulierte Daten)
+
+### Behoben
+- Filter in „Meine Tickets“ ging nach dem Keycloak-Login verloren (URL-Parameter `state` kollidierte mit OIDC; jetzt `filter`)
+- Layout: Kategoriekacheln, Navigationsbeschriftung, Filterchips, Toolbar-Felder, mobile Detailansicht
+- Backend-Typfehler, Compose-PID-Limit, Trivy-Einbindung in der CI
+
 ## [1.0.0] – 2026-11-27
 
 ### Hinzugefügt
