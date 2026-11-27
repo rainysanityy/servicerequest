@@ -286,5 +286,6 @@
     "starttls": "true",
     "ssl": "false",
     "auth": "false"
-  }
+  },
+  "loginTheme": "itportal"
 }

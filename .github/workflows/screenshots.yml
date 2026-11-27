@@ -35,7 +35,7 @@ jobs:
           mkdir -p /tmp/kcimport && chmod 755 /tmp/kcimport
           jq '.sslRequired = "external"' keycloak/import/itportal-realm.json > /tmp/kcimport/itportal-realm.json
           chmod 644 /tmp/kcimport/itportal-realm.json
-          docker run -d --name kc -p 8080:8080 -v /tmp/kcimport:/opt/keycloak/data/import:ro \
+          docker run -d --name kc -p 8080:8080 -v /tmp/kcimport:/opt/keycloak/data/import:ro -v "$PWD/keycloak/themes/itportal:/opt/keycloak/themes/itportal:ro" \
             -e KC_HTTP_RELATIVE_PATH=/auth -e PORTAL_HOSTNAME=localhost -e KEYCLOAK_ADMIN_API_SECRET=screenshot-only-secret-0123456789 \
             quay.io/keycloak/keycloak:26.4 start-dev --import-realm
           for i in $(seq 1 90); do curl -sf http://localhost:8080/auth/realms/itportal/.well-known/openid-configuration >/dev/null && break; sleep 2; done

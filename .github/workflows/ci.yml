@@ -105,7 +105,7 @@ jobs:
           jq '.sslRequired = "external"' keycloak/import/itportal-realm.json > /tmp/kcimport/itportal-realm.json
           chmod 644 /tmp/kcimport/itportal-realm.json
           docker run -d --name kc -p 8080:8080 \
-            -v "/tmp/kcimport:/opt/keycloak/data/import:ro" \
+            -v "/tmp/kcimport:/opt/keycloak/data/import:ro" -v "$PWD/keycloak/themes/itportal:/opt/keycloak/themes/itportal:ro" \
             -e KC_HTTP_RELATIVE_PATH=/auth -e KC_HEALTH_ENABLED=true \
             -e KC_BOOTSTRAP_ADMIN_USERNAME=bootstrap -e KC_BOOTSTRAP_ADMIN_PASSWORD=bootstrap \
             -e PORTAL_HOSTNAME=localhost -e KEYCLOAK_ADMIN_API_SECRET="$SECRET" \
