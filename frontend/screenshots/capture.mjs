@@ -368,8 +368,9 @@ try {
     await page.evaluate(() => { const h = [...document.querySelectorAll('h2')].find((e) => e.textContent?.includes('Support-Betrieb')); h?.scrollIntoView(); window.scrollBy(0, -80); });
   });
   await shot(alex, '/statistik', '24-statistik-administration', async (page) => {
-    await page.evaluate(() => { const h = [...document.querySelectorAll('h2')].find((e) => e.textContent?.includes('Administration')); h?.scrollIntoView(); window.scrollBy(0, -80); });
-    await page.hover('.viz-hbars li:nth-child(2)');
+    const h = page.locator('h2', { hasText: 'Administration' });
+    await h.scrollIntoViewIfNeeded();
+    await page.evaluate(() => { const el = [...document.querySelectorAll('h2')].find((e) => e.textContent?.includes('Administration')); if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 90); });
   });
   await alex.close();
 

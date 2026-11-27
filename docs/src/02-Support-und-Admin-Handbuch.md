@@ -152,9 +152,38 @@ Jedes Ticket besitzt eine Versionsnummer. Ändert eine andere Person das Ticket 
 | Datenschutzvorfall (z. B. Fehlversand personenbezogener Daten) | Unverzüglich Datenschutzkoordination informieren (72-h-Frist nach Art. 33 DSGVO) |
 | Portal fehlerhaft / nicht erreichbar | Betriebsteam gemäß *Betriebskonzept* (Eskalationsmatrix) |
 
+## Statistik für den Support
+
+Unter **Statistik** sehen UHD-Mitarbeitende zusätzlich zum Service-Überblick den Bereich **Support-Betrieb**:
+
+| Grafik | Nutzen |
+|---|---|
+| Kennzahlen *Nicht zugewiesen*, *SLA überschritten*, *Warten auf Rückmeldung* | aktueller Handlungsbedarf |
+| Eingang und Erledigung (Linien) | Wächst der Rückstand? Neu eingegangene vs. gelöste Tickets pro Tag (bzw. Woche bei 12 Monaten) |
+| Offene Tickets nach Status / nach Priorität | Zusammensetzung der Queue |
+| Alter offener Tickets | Wie viele Tickets liegen länger als 7 bzw. 14 Tage? |
+| Neue Tickets nach Kategorie | Wofür wird die IT angefragt? |
+| SLA-Erfüllung nach Priorität | inkl. gelöster Anzahl und Median der Erstreaktion |
+
+::: info
+Es gibt bewusst **keine Auswertungen je bearbeitender Person** (Datenschutz- und Mitbestimmungsvorgaben). Kennzahlen dienen der Steuerung des Teams, nicht der Leistungskontrolle.
+:::
+
 # Teil B – Administration
 
 Den Admin-Bereich öffnen Sie über **Admin** in der Navigation. Er gliedert sich in Registerkarten. **Jede Änderung wird im Audit-Log protokolliert** (wer, wann, was, vorher/nachher-Kennzahlen).
+
+## Statistik für Administratoren
+
+Administratoren sehen unter **Statistik** alle Bereiche: Service-Überblick, Support-Betrieb und zusätzlich **Administration**:
+
+* **Benutzer gesamt, aktiv (30 Tage), UHD, Administratoren** sowie **Rollenverteilung**,
+* **Neue Benutzer pro Woche** (erste Anmeldung im Portal – zeigt z. B. Registrierungswellen),
+* **Top 10 Katalogeinträge** im Zeitraum (Grundlage für Katalogpflege und Standardlösungen),
+* **Abschlüsse nach Ergebnis** (geschlossen, abgelehnt, zurückgezogen),
+* **Verweigerte Zugriffe** pro Tag (Audit-Ergebnis *verweigert* – Ausreißer prüfen) und **häufigste Audit-Aktionen**.
+
+Jede Grafik lässt sich als Tabelle anzeigen. Der Umfang wird serverseitig nach Rolle bestimmt.
 
 ## Übersicht
 

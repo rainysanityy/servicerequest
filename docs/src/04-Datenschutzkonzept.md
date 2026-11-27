@@ -127,6 +127,7 @@ Das Portal ist objektiv geeignet, Verhalten oder Leistung von Beschäftigten zu 
 | Kein Tracking | Keine externen Dienste, keine Analyse-Cookies, keine Fremdschriften |
 | Log-Minimierung | Proxy protokolliert Pfade ohne Query-Parameter; Tokens/Cookies werden nie geloggt; IP-Adressen im Audit-Log werden nach 90 Tagen entfernt |
 | Minimale Angaben für neue Konten | Für Kontoanträge werden nur Name, Eintritt, Organisation und Referenzperson erfasst – keine Privatanschrift, Geburtsdaten o. Ä. |
+| Statistiken nur aggregiert | Kennzahlen ausschließlich als Summen/Durchschnitte; keine Auswertung je bearbeitender Person; allgemeine Kennzahlen unterdrücken Gruppen mit weniger als 3 Tickets; Umfang je Rolle serverseitig begrenzt |
 | Anonymisierung statt Löschung | Abgeschlossene Tickets verlieren nach Fristablauf alle Inhalte und Personenbezüge; aggregierte Statistik bleibt möglich |
 | Befristete Berechtigungen | Formular erzwingt Ablaufdatum für Zugriffsrechte |
 

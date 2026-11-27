@@ -157,6 +157,7 @@ Bewertung nach BSI 200-3: Eintrittshäufigkeit (selten / mittel / häufig / sehr
 | Workflow-Durchsetzung | Statusübergänge aus DB-Tabelle je Rolle, serverseitig geprüft, verweigerte Versuche auditiert | AC-3, AU-2 |
 | Admin-Pfade | `/auth/admin` und Master-Realm nur aus Admin-Netz | AC-17, SC-7 |
 | Selbstregistrierung | Keycloak-Registrierung ohne Mailserver (keine E-Mail-Bestätigung, kein Passwort-Reset per Mail), Standardgruppe `/Mitarbeitende`, Zugriff nur mit Adresse aus `ALLOWED_EMAIL_DOMAINS` (Backend), keine Vergabe privilegierter Rollen, Sichtung neuer Konten | AC-2, IA-8 |
+| Statistik | `GET /api/stats` liefert je Rolle nur den zulässigen Umfang (user: allgemein + eigene Tickets; first-level: + Support-Betrieb; admin: + Katalog/Benutzer/Sicherheit); Rate Limit 60/min | AC-3, AC-6 |
 | Rollenverwaltung | Admin-Oberfläche über Service-Account `portal-admin-api` (Client Credentials, Realm-beschränkt); sofortiges Beenden von Sitzungen bei Rechteentzug; Schutz vor Selbst-/Letzt-Admin-Herabstufung; Begründungspflicht im Audit | AC-2, AC-2(4), AC-6 |
 
 ## Anwendungssicherheit (OWASP Top 10)

@@ -309,6 +309,25 @@ Sie können jederzeit – solange das Ticket nicht abgeschlossen ist – weitere
 Gelöste Tickets, die Sie nicht bestätigen, werden vom Support nach einer angemessenen Frist geschlossen.
 :::
 
+# Statistik
+
+Unter **Statistik** in der Navigation sehen alle Mitarbeitenden **allgemeine Service-Kennzahlen**. Oben wählen Sie den Zeitraum (7 Tage, 30 Tage, 90 Tage, 12 Monate).
+
+| Kennzahl / Grafik | Bedeutung |
+|---|---|
+| Gelöst | Anzahl gelöster Tickets im Zeitraum |
+| SLA-Erfüllung | Anteil der Tickets, die innerhalb der vereinbarten Lösungszeit gelöst wurden – mit Hinweis *im Ziel* (≥ 90 %), *knapp unter Ziel* oder *unter Ziel* |
+| Ø Lösungszeit, Median Erstreaktion | Wie lange die Lösung bzw. die erste Antwort der IT typischerweise dauert |
+| Gelöste Tickets pro Woche | Säulendiagramm der letzten 12 Wochen |
+| Ø Lösungszeit nach Kategorie | Wie lange z. B. Hardware- oder Berechtigungsanfragen im Mittel dauern |
+| Meine Anfragen nach Status | Verteilung Ihrer eigenen Tickets |
+
+**Bedienung:** Fahren Sie mit der Maus über eine Säule oder Linie, um den genauen Wert zu sehen. Über **Tabelle** wird jede Grafik als Tabelle angezeigt (auch für Bildschirmleser geeignet). Die Diagramme passen sich dem hellen bzw. dunklen Modus an.
+
+::: info
+Alle Werte sind zusammengefasst. Es gibt keine Auswertungen über einzelne Personen; Kategorien mit weniger als drei Tickets werden nicht angezeigt.
+:::
+
 # Häufige Fragen (FAQ)
 
 **Ich sehe den Menüpunkt „Support“ bzw. „Admin“ nicht.**

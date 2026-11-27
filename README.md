@@ -98,16 +98,19 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder
   | Allgemein | Fragen und Störungen |
 
 - „Meine Tickets“ mit Filter, Suche, Statusverfolgung, Verlauf, Rückfragen beantworten, Lösung bestätigen/erneut öffnen
+- **Statistik** mit allgemeinen Service-Kennzahlen (SLA, Lösungszeiten, Verlauf) und eigenen Anfragen
 - Dark-, Light- und System-Modus, wählbare Farbpaletten, barrierearme Bedienung (Tastatur, ARIA, reduzierte Bewegung)
 
 **Für den First-Level-Support**
 - Support-Queue mit Kennzahlen, Schnellfiltern, Sortierung nach Priorität/SLA
+- **Statistik Support-Betrieb**: Eingang vs. Erledigung, Queue nach Status/Priorität, Alter offener Tickets, SLA je Priorität
 - Annehmen/Zuweisen, Priorisieren (SLA-Neuberechnung), Statuswechsel nach Workflow, interne Notizen, Standardlösungen
 
 **Für die Administration**
 - Katalog und Formulare (JSON-Definition mit bedingten Feldern `when`, Bundle-Regel `requireOneOf`, serverseitiger Validierung inkl. ReDoS-Schutz), Kategorien
 - Status und Workflow-Matrix je Rolle, SLA-Zeiten, Standardlösungen
 - **Benutzer & Rollen**: Konten suchen, Rollen **Mitarbeitende / UHD / Admin** vergeben, sperren/entsperren – mit Begründung im Audit-Log, sofortigem Sitzungsende bei Rechteentzug und Schutz vor Selbst- bzw. Letzt-Admin-Herabstufung
+- **Statistik komplett** inkl. Top-Katalogeinträge, Abschlüsse, Benutzer-/Rollenentwicklung, verweigerte Zugriffe und Audit-Aktionen (nur aggregiert, keine Auswertung einzelner Bearbeitender)
 - Audit-Log mit Filter und Integritätsprüfung (Hash-Kette), Systemsicht
 
 ## Architektur

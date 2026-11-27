@@ -5,6 +5,7 @@ Alle nennenswerten Änderungen an diesem Projekt. Format angelehnt an [Keep a Ch
 ## [Unveröffentlicht]
 
 ### Hinzugefügt
+- Statistik-Seite mit Grafiken, rollenabhängig: Mitarbeitende (allgemeine Kennzahlen, eigene Anfragen), UHD (+ Support-Betrieb), Admin (+ Katalog, Benutzer, Sicherheit); Tooltips, Tabellenansicht, validierte Farbpaletten für Dark/Light
 - Keycloak-Login-Theme `itportal` im Material 3 Expressive Design (Login, Registrierung, Passwort-Reset, OTP; Dark/Light nach Systemeinstellung)
 - Roboto lokal eingebunden (Portal und Login), keine externen Schriftquellen
 - Selbstregistrierung über Keycloak ohne Mailserver (keine E-Mail-Bestätigung, kein Passwort-Reset per Mail; Standardgruppe `/Mitarbeitende`, Domain-Prüfung `ALLOWED_EMAIL_DOMAINS` im Backend)
