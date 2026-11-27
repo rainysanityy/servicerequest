@@ -121,7 +121,7 @@ jobs:
           code=$(curl -s -o page.html -w '%{http_code}' "$U&code_challenge=$CH&code_challenge_method=S256")
           echo "HTTP $code"; test "$code" = 200 || { head -c 2000 page.html; exit 1; }
           grep -qi 'kc-register-form\|registration' page.html
-          grep -q 'itportal/login/css/itportal.css' page.html || { echo 'Theme itportal nicht aktiv'; exit 1; }
+          grep -q 'login/itportal/css/itportal.css' page.html || { echo 'Theme itportal nicht aktiv'; exit 1; }
           # ohne PKCE muss die Anfrage abgelehnt werden
           code=$(curl -s -o /dev/null -w '%{http_code}' "$U")
           echo "ohne PKCE: HTTP $code"; test "$code" != 200 -o -n "$(curl -s "$U" | grep -i 'code_challenge')"
