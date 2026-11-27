@@ -5,6 +5,15 @@ Alle nennenswerten Änderungen an diesem Projekt. Format angelehnt an [Keep a Ch
 ## [Unveröffentlicht]
 
 ### Hinzugefügt
+- Katalog v2 (Migration `003_catalog_v2.sql`):
+  - Hardware: APC, Monitor, Mobiltelefon, Tablet, Maus, Tastatur, Webcam – einzeln oder als Hardware-Bundle mit Stückzahlen
+  - Software als Freitext
+  - Telefonie: Softphone oder Hardphone (Tisch-, Video-, DECT-, Konferenztelefon)
+  - Berechtigungen & VPN: Netzlaufwerk-Zugriff, Mail-Postfach-Zugriff, eigener VPN-Eintrag
+  - Neue Kategorien: Benutzerkonten (neues Konto wie Referenzperson), Server & VMs (Spezifikation), Zertifikate (SSL/TLS, S/MIME)
+- Formular-Engine: bedingte Felder (`when`), Mindestens-eine-Position (`requireOneOf`), Pflicht-Bestätigung bei Checkboxen
+- Neue Standardlösungen für Telefonie, VPN, Benutzerkonten, VMs und Zertifikate
+- Screenshots überwiegend im Darkmode; Katalog im Screenshot-Workflow wird aus den Migrationen gelesen
 - UI-Screenshots in der README, automatisch erzeugt über den Workflow „Screenshots“ (Playwright, simulierte Daten)
 
 ### Behoben

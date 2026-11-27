@@ -30,34 +30,42 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/01-startseite-hell.png" alt="Startseite im hellen Modus"><br><sub><b>Startseite</b> – heller Modus</sub></td>
-    <td width="50%"><img src="docs/screenshots/02-startseite-dunkel.png" alt="Startseite im dunklen Modus"><br><sub><b>Startseite</b> – dunkler Modus</sub></td>
+    <td width="50%"><img src="docs/screenshots/01-startseite-dunkel.png" alt="Startseite im Darkmode"><br><sub><b>Startseite</b> – Darkmode</sub></td>
+    <td width="50%"><img src="docs/screenshots/02-startseite-hell.png" alt="Startseite im Light Mode"><br><sub><b>Startseite</b> – Light Mode</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/03-katalog.png" alt="Service-Katalog"><br><sub><b>Service-Katalog</b> mit Suche und Kategorien</sub></td>
-    <td><img src="docs/screenshots/04-anfrage-formular.png" alt="Geführtes Anfrageformular mit Validierung"><br><sub><b>Geführtes Formular</b> mit Eingabeprüfung</sub></td>
+    <td width="50%"><img src="docs/screenshots/03-katalog.png" alt="Service-Katalog"><br><sub><b>Service-Katalog</b> – 8 Kategorien mit Suche</sub></td>
+    <td width="50%"><img src="docs/screenshots/04-formular-bundle.png" alt="Hardware-Bundle"><br><sub><b>Hardware-Bundle</b> – mehrere Geräte mit Stückzahl</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/05-meine-tickets.png" alt="Meine Tickets"><br><sub><b>Meine Tickets</b> – Filter, Suche, Status</sub></td>
-    <td><img src="docs/screenshots/06-ticket-detail.png" alt="Ticketdetails aus Nutzersicht"><br><sub><b>Ticketdetails</b> – Lösung bestätigen oder erneut öffnen</sub></td>
+    <td width="50%"><img src="docs/screenshots/05-formular-vm.png" alt="Virtuelle Maschine"><br><sub><b>Virtuelle Maschine</b> – OS, vCPU, RAM, Platten, Netz</sub></td>
+    <td width="50%"><img src="docs/screenshots/06-formular-telefonie.png" alt="Telefonie"><br><sub><b>Telefonie</b> – Hardphone-Felder erscheinen bedingt</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/07-support-queue.png" alt="Support-Queue im dunklen Modus"><br><sub><b>Support-Arbeitsbereich</b> – Kennzahlen, Filter, SLA</sub></td>
-    <td><img src="docs/screenshots/08-support-bearbeitung.png" alt="Ticketbearbeitung im Support"><br><sub><b>Bearbeitung</b> – Zuweisung, Priorität, Workflow, Standardlösungen</sub></td>
+    <td width="50%"><img src="docs/screenshots/07-meine-tickets.png" alt="Meine Tickets"><br><sub><b>Meine Tickets</b> – Filter, Suche, Status</sub></td>
+    <td width="50%"><img src="docs/screenshots/08-ticket-detail.png" alt="Ticketdetails"><br><sub><b>Ticketdetails</b> – Lösung bestätigen oder erneut öffnen</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/09-admin-workflow.png" alt="Admin: Status und Workflow"><br><sub><b>Administration</b> – Status & Workflow</sub></td>
-    <td><img src="docs/screenshots/10-admin-audit.png" alt="Admin: Audit-Log"><br><sub><b>Audit-Log</b> mit Integritätsprüfung</sub></td>
+    <td width="50%"><img src="docs/screenshots/09-support-queue.png" alt="Support-Queue"><br><sub><b>Support-Arbeitsbereich</b> – Kennzahlen, Filter, SLA</sub></td>
+    <td width="50%"><img src="docs/screenshots/10-support-bearbeitung.png" alt="Ticketbearbeitung"><br><sub><b>Bearbeitung</b> – Zuweisung, Priorität, Workflow, interne Notizen</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/11-admin-katalog.png" alt="Admin: Katalog"><br><sub><b>Administration</b> – Katalog & Formulare</sub></td>
+    <td width="50%"><img src="docs/screenshots/12-admin-workflow.png" alt="Admin: Workflow"><br><sub><b>Administration</b> – Status & Workflow</sub></td>
   </tr>
 </table>
 
 <p align="center">
-  <img src="docs/screenshots/11-mobil-startseite.png" alt="Mobile Startseite" width="260">&nbsp;&nbsp;
-  <img src="docs/screenshots/12-mobil-ticket.png" alt="Mobile Ticketansicht" width="260"><br>
+  <img src="docs/screenshots/13-admin-audit.png" alt="Admin: Audit-Log" width="700"><br><sub><b>Audit-Log</b> mit Integritätsprüfung (Hash-Kette)</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/14-mobil-startseite.png" alt="Mobile Startseite" width="260">&nbsp;&nbsp;
+  <img src="docs/screenshots/15-mobil-ticket.png" alt="Mobile Ticketansicht" width="260"><br>
   <sub><b>Mobile Ansicht</b> mit Navigationsleiste unten</sub>
 </p>
 
-<sub>Die Aufnahmen entstehen automatisch über den Workflow <a href=".github/workflows/screenshots.yml">Screenshots</a> (Playwright). Keycloak und API werden dabei mit Beispieldaten simuliert; alle Namen und Tickets sind fiktiv.</sub>
+<sub>Die Aufnahmen entstehen automatisch über den Workflow <a href=".github/workflows/screenshots.yml">Screenshots</a> (Playwright). Der Katalog wird dabei direkt aus den Datenbank-Migrationen gelesen; Keycloak und API werden mit fiktiven Beispieldaten simuliert.</sub>
 
 ## Funktionen
 
