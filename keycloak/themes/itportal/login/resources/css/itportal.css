@@ -184,3 +184,19 @@ a:hover { text-decoration: underline; }
 /* OTP / QR-Code-Einrichtung */
 #kc-totp-secret-qr-code { border-radius: 16px; background: #fff; padding: 8px; }
 ol#kc-totp-settings li { color: var(--md-on-surface); margin-bottom: 10px; }
+
+/* ---------------------------------------------------------------- Korrekturen Basistheme */
+.pf-c-input-group { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+.pf-c-input-group::before, .pf-c-input-group::after,
+.pf-c-input-group > *::before, .pf-c-input-group > *::after { display: none !important; border: 0 !important; }
+.pf-c-input-group > .pf-c-form-control { border-radius: 12px !important; }
+.login-pf-header > div, .login-pf-header [class*='col-'] { float: none !important; width: auto !important; padding: 0 !important; margin: 0 !important; }
+.login-pf-header .subtitle { text-align: left !important; }
+#kc-page-title { padding: 0 !important; }
+#kc-info { margin: 24px 0 0 !important; }
+#kc-info-wrapper { margin: 0 !important; }
+@media (max-width: 520px) {
+  .login-pf-page { padding: 28px 12px 40px; }
+  #kc-header-wrapper { font-size: 22px !important; }
+  #kc-page-title { font-size: 28px !important; line-height: 36px; }
+}
