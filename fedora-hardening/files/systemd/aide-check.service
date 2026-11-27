@@ -1,0 +1,8 @@
+[Unit]
+Description=AIDE Dateiintegritätsprüfung
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/aide --check
+Nice=19
+IOSchedulingClass=idle

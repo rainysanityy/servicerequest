@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Restriktive Zone für den Portal-Server (Default: DROP) -->
+<zone target="DROP">
+  <short>srp</short>
+  <description>IT-Service-Portal: nur HTTPS/HTTP öffentlich, SSH nur aus dem Admin-Netz.</description>
+  <service name="https"/>
+  <service name="http"/>
+  <icmp-block-inversion/>
+  <icmp-block name="echo-request"/>
+  <icmp-block name="destination-unreachable"/>
+  <icmp-block name="time-exceeded"/>
+  <icmp-block name="packet-too-big"/>
+  <!-- Rootless Docker publiziert auf 8443/8080; extern nur via 443/80 erreichbar -->
+  <forward-port port="443" protocol="tcp" to-port="8443"/>
+  <forward-port port="80" protocol="tcp" to-port="8080"/>
+  <rule family="ipv4">
+    <source address="{{ srp_admin_cidr }}"/>
+    <service name="ssh"/>
+    <log prefix="SSH-ADMIN " level="info"><limit value="10/m"/></log>
+    <accept/>
+  </rule>
+</zone>

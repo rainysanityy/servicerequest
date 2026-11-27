@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+secrets/
+proxy/certs/*
+!proxy/certs/.gitkeep
+keycloak/import/itportal-users-0.json
+*.log
+__pycache__/
+*.pyc

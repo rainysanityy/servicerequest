@@ -1,0 +1,78 @@
+## =============================================================================
+## auditd-Regeln – BSI OPS.1.1.5 (Protokollierung), SYS.1.3, NIST AU-2/AU-12
+## =============================================================================
+-D
+-b 8192
+-f 1
+--backlog_wait_time 60000
+
+## Identitäten & Berechtigungen
+-w /etc/passwd -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/group -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+-w /etc/security/opasswd -p wa -k identity
+-w /etc/subuid -p wa -k identity
+-w /etc/subgid -p wa -k identity
+-w /etc/sudoers -p wa -k privilege
+-w /etc/sudoers.d/ -p wa -k privilege
+-w /etc/pam.d/ -p wa -k pam
+
+## Anmeldungen
+-w /var/log/lastlog -p wa -k logins
+-w /var/run/faillock/ -p wa -k logins
+-w /var/log/btmp -p wa -k logins
+-w /var/log/wtmp -p wa -k logins
+
+## SSH, SELinux, Firewall, Audit, Kernelparameter
+-w /etc/ssh/sshd_config -p wa -k sshd
+-w /etc/ssh/sshd_config.d/ -p wa -k sshd
+-w /etc/selinux/ -p wa -k MAC-policy
+-w /usr/share/selinux/ -p wa -k MAC-policy
+-w /etc/firewalld/ -p wa -k firewall
+-w /etc/audit/ -p wa -k auditconfig
+-w /etc/sysctl.conf -p wa -k sysctl
+-w /etc/sysctl.d/ -p wa -k sysctl
+-w /etc/crypto-policies/ -p wa -k crypto
+-w /etc/systemd/ -p wa -k systemd
+
+## Zeit
+-a always,exit -F arch=b64 -S adjtimex,settimeofday,clock_settime -k time-change
+-a always,exit -F arch=b32 -S adjtimex,settimeofday,stime,clock_settime -k time-change
+-w /etc/localtime -p wa -k time-change
+
+## Kernelmodule
+-a always,exit -F arch=b64 -S init_module,finit_module,delete_module -k modules
+-w /usr/sbin/insmod -p x -k modules
+-w /usr/sbin/rmmod -p x -k modules
+-w /usr/sbin/modprobe -p x -k modules
+
+## Mounts & Rechteänderungen durch Benutzer
+-a always,exit -F arch=b64 -S mount,umount2 -F auid>=1000 -F auid!=unset -k mounts
+-a always,exit -F arch=b64 -S chmod,fchmod,fchmodat -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b64 -S chown,fchown,fchownat,lchown -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b64 -S setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid>=1000 -F auid!=unset -k perm_mod
+
+## Fehlgeschlagene Zugriffe
+-a always,exit -F arch=b64 -S open,openat,creat,truncate,ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=unset -k access
+-a always,exit -F arch=b64 -S open,openat,creat,truncate,ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=unset -k access
+
+## Privilegierte Befehle (Root-Ausführung durch angemeldete Benutzer)
+-a always,exit -F arch=b64 -S execve -F euid=0 -F auid>=1000 -F auid!=unset -k privileged-exec
+-w /usr/bin/sudo -p x -k privileged
+-w /usr/bin/su -p x -k privileged
+-w /usr/bin/newuidmap -p x -k privileged
+-w /usr/bin/newgidmap -p x -k privileged
+
+## Container-Laufzeit & Portal
+-w /usr/bin/dockerd -p x -k container
+-w /usr/bin/dockerd-rootless.sh -p x -k container
+-w /usr/bin/docker -p x -k container
+-w /usr/bin/rootlesskit -p x -k container
+-w /srv/srp/app/docker-compose.yml -p wa -k srp-config
+-w /srv/srp/app/.env -p rwa -k srp-secrets
+-w /srv/srp/app/secrets/ -p rwa -k srp-secrets
+-w /srv/srp/app/proxy/certs/ -p rwa -k srp-secrets
+
+## Regeln unveränderlich machen (Änderung nur nach Neustart) – MUSS letzte Zeile sein
+-e 2

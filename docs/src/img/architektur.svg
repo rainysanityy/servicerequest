@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" font-family="Inter, sans-serif" font-size="13">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#49454F"/></marker>
+  </defs>
+  <rect x="0" y="0" width="900" height="620" fill="#FFFFFF"/>
+  <!-- Clients -->
+  <rect x="330" y="14" width="240" height="46" rx="23" fill="#EADDFF"/>
+  <text x="450" y="42" text-anchor="middle" font-weight="600" fill="#21005D">Browser (Mitarbeitende, Support, Admin)</text>
+  <!-- Host -->
+  <rect x="20" y="86" width="860" height="520" rx="28" fill="#F7F2FA" stroke="#79747E" stroke-dasharray="6 4"/>
+  <text x="44" y="114" font-weight="700" fill="#1D1B20">Fedora Server · SELinux enforcing · auditd · firewalld (Zone srp, DROP) · Docker rootless (Benutzer srp)</text>
+  <rect x="330" y="128" width="240" height="40" rx="12" fill="#FFD8E4"/>
+  <text x="450" y="153" text-anchor="middle" fill="#31111D" font-weight="600">firewalld  443→8443 · 80→8080</text>
+  <!-- edge network -->
+  <rect x="44" y="186" width="812" height="86" rx="20" fill="#FFFFFF" stroke="#CAC4D0"/>
+  <text x="62" y="208" fill="#625B71" font-weight="600">Netz „edge“</text>
+  <rect x="300" y="200" width="300" height="60" rx="16" fill="#6750A4"/>
+  <text x="450" y="226" text-anchor="middle" fill="#FFFFFF" font-weight="700">proxy (nginx-unprivileged)</text>
+  <text x="450" y="246" text-anchor="middle" fill="#FFFFFF" font-size="11.5">TLS 1.2/1.3 · CSP/HSTS · Rate Limit · Request-ID</text>
+  <!-- app network -->
+  <rect x="44" y="290" width="812" height="130" rx="20" fill="#FFFFFF" stroke="#CAC4D0"/>
+  <text x="62" y="312" fill="#625B71" font-weight="600">Netz „app“ (internal)</text>
+  <rect x="70" y="328" width="220" height="74" rx="16" fill="#E8DEF8"/>
+  <text x="180" y="356" text-anchor="middle" font-weight="700" fill="#1D192B">frontend</text>
+  <text x="180" y="376" text-anchor="middle" font-size="11.5" fill="#1D192B">React SPA · M3 Expressive</text>
+  <text x="180" y="392" text-anchor="middle" font-size="11.5" fill="#1D192B">nginx :8080 (UID 101)</text>
+  <rect x="340" y="328" width="220" height="74" rx="16" fill="#E8DEF8"/>
+  <text x="450" y="356" text-anchor="middle" font-weight="700" fill="#1D192B">backend</text>
+  <text x="450" y="376" text-anchor="middle" font-size="11.5" fill="#1D192B">Fastify API :3000 · distroless</text>
+  <text x="450" y="392" text-anchor="middle" font-size="11.5" fill="#1D192B">JWT/JWKS · RBAC · Audit</text>
+  <rect x="610" y="328" width="220" height="74" rx="16" fill="#E8DEF8"/>
+  <text x="720" y="356" text-anchor="middle" font-weight="700" fill="#1D192B">keycloak</text>
+  <text x="720" y="376" text-anchor="middle" font-size="11.5" fill="#1D192B">OIDC IdP · Realm itportal</text>
+  <text x="720" y="392" text-anchor="middle" font-size="11.5" fill="#1D192B">PKCE · MFA · Brute-Force-Schutz</text>
+  <!-- data networks -->
+  <rect x="300" y="438" width="300" height="118" rx="20" fill="#FFFFFF" stroke="#CAC4D0"/>
+  <text x="318" y="460" fill="#625B71" font-weight="600">Netz „data“ (internal)</text>
+  <rect x="340" y="472" width="220" height="70" rx="16" fill="#A6F4B5"/>
+  <text x="450" y="500" text-anchor="middle" font-weight="700" fill="#00210C">db (PostgreSQL 17)</text>
+  <text x="450" y="520" text-anchor="middle" font-size="11.5" fill="#00210C">portal_app (DML) · portal_migrator</text>
+  <rect x="616" y="438" width="240" height="118" rx="20" fill="#FFFFFF" stroke="#CAC4D0"/>
+  <text x="634" y="460" fill="#625B71" font-weight="600">Netz „iam-data“ (internal)</text>
+  <rect x="626" y="472" width="220" height="70" rx="16" fill="#A6F4B5"/>
+  <text x="736" y="500" text-anchor="middle" font-weight="700" fill="#00210C">keycloak-db</text>
+  <text x="736" y="520" text-anchor="middle" font-size="11.5" fill="#00210C">PostgreSQL 17</text>
+  <rect x="44" y="438" width="236" height="118" rx="20" fill="#FFDF9E"/>
+  <text x="162" y="468" text-anchor="middle" font-weight="700" fill="#261A00">migrate (einmalig)</text>
+  <text x="162" y="490" text-anchor="middle" font-size="11.5" fill="#261A00">Schema-Migrationen</text>
+  <text x="162" y="508" text-anchor="middle" font-size="11.5" fill="#261A00">mit Prüfsummen</text>
+  <text x="162" y="534" text-anchor="middle" font-size="11.5" fill="#261A00">Backup: age-verschlüsselt → /srv/backup</text>
+  <!-- arrows -->
+  <line x1="450" y1="60" x2="450" y2="126" stroke="#49454F" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="450" y1="168" x2="450" y2="198" stroke="#49454F" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="360" y1="260" x2="200" y2="326" stroke="#49454F" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="450" y1="260" x2="450" y2="326" stroke="#49454F" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="540" y1="260" x2="700" y2="326" stroke="#49454F" stroke-width="2" marker-end="url(#a)"/>
+  <text x="250" y="292" font-size="11" fill="#49454F">/</text>
+  <text x="458" y="300" font-size="11" fill="#49454F">/api</text>
+  <text x="630" y="292" font-size="11" fill="#49454F">/auth</text>
+  <line x1="450" y1="402" x2="450" y2="470" stroke="#49454F" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="736" y1="402" x2="736" y2="470" stroke="#49454F" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="560" y1="352" x2="608" y2="352" stroke="#7D5260" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+  <text x="584" y="344" text-anchor="middle" font-size="10.5" fill="#7D5260">JWKS</text>
+  <line x1="280" y1="506" x2="338" y2="506" stroke="#49454F" stroke-width="2" marker-end="url(#a)"/>
+  <text x="450" y="590" text-anchor="middle" font-size="11.5" fill="#49454F">Alle Container: non-root · read-only rootfs · cap_drop ALL · no-new-privileges · Ressourcenlimits · Healthchecks</text>
+</svg>

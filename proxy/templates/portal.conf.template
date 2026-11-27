@@ -1,0 +1,111 @@
+# Wird beim Containerstart per envsubst nach /etc/nginx/conf.d/portal.conf gerendert.
+# Variablen: ${PORTAL_HOSTNAME}, ${ADMIN_ALLOW_CIDR}
+
+upstream srp_frontend { server frontend:8080; keepalive 16; }
+upstream srp_backend  { server backend:3000;  keepalive 32; }
+upstream srp_keycloak { server keycloak:8080; keepalive 16; }
+
+# ---- HTTP: nur Redirect auf HTTPS + Healthcheck ------------------------------
+server {
+  listen 8080 default_server;
+  server_name _;
+  location = /healthz { access_log off; return 200 "ok\n"; }
+  location / { return 301 https://${PORTAL_HOSTNAME}$request_uri; }
+}
+
+# ---- Fallback: unbekannte Hostnamen abweisen (Host-Header-Angriffe) ----------
+server {
+  listen 8443 ssl default_server;
+  http2 on;
+  server_name _;
+  ssl_certificate     /etc/nginx/certs/tls.crt;
+  ssl_certificate_key /etc/nginx/certs/tls.key;
+  location = /healthz { access_log off; return 200 "ok\n"; }
+  location / { return 421; }
+}
+
+# ---- HTTPS: Portal ------------------------------------------------------------
+server {
+  listen 8443 ssl;
+  http2 on;
+  server_name ${PORTAL_HOSTNAME};
+
+  ssl_certificate     /etc/nginx/certs/tls.crt;
+  ssl_certificate_key /etc/nginx/certs/tls.key;
+
+  limit_conn perip 50;
+
+  # Gemeinsame Proxy-Header (X-Forwarded-For wird ÜBERSCHRIEBEN, nicht angehängt)
+  proxy_http_version 1.1;
+  proxy_set_header Connection "";
+  proxy_set_header Host              $host;
+  proxy_set_header X-Real-IP         $remote_addr;
+  proxy_set_header X-Forwarded-For   $remote_addr;
+  proxy_set_header X-Forwarded-Proto https;
+  proxy_set_header X-Forwarded-Host  $host;
+  proxy_set_header X-Forwarded-Port  443;
+  proxy_set_header X-Request-ID      $request_id;
+  proxy_hide_header X-Powered-By;
+  proxy_hide_header Server;
+
+  # ---------------- API ------------------------------------------------------
+  location /api/ {
+    include /etc/nginx/snippets/security-headers.conf;
+    add_header Content-Security-Policy "default-src 'none'; frame-ancestors 'none'" always;
+    limit_req zone=api burst=60 nodelay;
+    client_max_body_size 64k;
+    limit_except GET POST PUT { deny all; }
+    proxy_read_timeout 30s;
+    proxy_pass http://srp_backend;
+  }
+
+  # ---------------- Keycloak: Admin-Konsole & Master-Realm nur intern ---------
+  location ^~ /auth/admin/ {
+    allow ${ADMIN_ALLOW_CIDR};
+    deny all;
+    include /etc/nginx/snippets/security-headers-idp.conf;
+    proxy_buffer_size 128k;
+    proxy_buffers 4 256k;
+    proxy_pass http://srp_keycloak;
+  }
+  location ^~ /auth/realms/master/ {
+    allow ${ADMIN_ALLOW_CIDR};
+    deny all;
+    include /etc/nginx/snippets/security-headers-idp.conf;
+    proxy_buffer_size 128k;
+    proxy_buffers 4 256k;
+    proxy_pass http://srp_keycloak;
+  }
+  # Login-/Token-Endpunkte: strenges Rate Limit (Brute-Force-Schutz zusätzlich zu Keycloak)
+  location ~ ^/auth/realms/[a-z0-9-]+/(login-actions/|protocol/openid-connect/(auth|token)) {
+    include /etc/nginx/snippets/security-headers-idp.conf;
+    limit_req zone=login burst=20 nodelay;
+    proxy_buffer_size 128k;
+    proxy_buffers 4 256k;
+    proxy_pass http://srp_keycloak;
+  }
+  location ^~ /auth/realms/ {
+    include /etc/nginx/snippets/security-headers-idp.conf;
+    limit_req zone=web burst=100 nodelay;
+    proxy_buffer_size 128k;
+    proxy_buffers 4 256k;
+    proxy_pass http://srp_keycloak;
+  }
+  location ^~ /auth/resources/ {
+    include /etc/nginx/snippets/security-headers-idp.conf;
+    proxy_pass http://srp_keycloak;
+  }
+  # Alles andere unter /auth (z. B. /auth/metrics, /auth/health) ist gesperrt
+  location ^~ /auth/ { return 404; }
+
+  # ---------------- SPA ----------------------------------------------------
+  location / {
+    include /etc/nginx/snippets/security-headers.conf;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; object-src 'none'; upgrade-insecure-requests" always;
+    limit_req zone=web burst=200 nodelay;
+    limit_except GET HEAD { deny all; }
+    proxy_pass http://srp_frontend;
+  }
+
+  location = /healthz { access_log off; return 200 "ok\n"; }
+}

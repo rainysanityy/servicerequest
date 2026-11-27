@@ -1,0 +1,57 @@
+/* Material-3-angelehntes Druck-Layout für die Portal-Dokumentation */
+@font-face { font-family: 'Inter'; src: local('Inter'); }
+html { font-size: 10.5pt; }
+body { font-family: 'Inter', 'DejaVu Sans', sans-serif; color: #1D1B20; line-height: 1.55; margin: 0; }
+h1, h2, h3, h4 { font-family: 'Inter', sans-serif; color: #1D1B20; page-break-after: avoid; line-height: 1.25; }
+h1 { font-size: 22pt; font-weight: 600; color: #4F378B; margin: 0 0 14px; padding-top: 4px; page-break-before: always; letter-spacing: -0.3px; }
+h1:first-of-type { page-break-before: avoid; }
+h1 .header-section-number { display: inline-block; min-width: 34px; height: 34px; line-height: 34px; text-align: center;
+  border-radius: 17px; background: #EADDFF; color: #21005D; font-size: 15pt; margin-right: 12px; vertical-align: 3px; }
+h2 { font-size: 14.5pt; font-weight: 600; margin: 22px 0 8px; color: #21005D; }
+h3 { font-size: 12pt; font-weight: 600; margin: 16px 0 6px; color: #4A4458; }
+h4 { font-size: 11pt; font-weight: 600; margin: 12px 0 4px; }
+h2 .header-section-number, h3 .header-section-number { color: #7D5260; margin-right: 6px; }
+p { margin: 6px 0 8px; text-align: left; }
+ul, ol { margin: 6px 0 10px; padding-left: 22px; }
+li { margin: 2px 0; }
+a { color: #6750A4; text-decoration: none; }
+strong { font-weight: 600; }
+code { font-family: 'DejaVu Sans Mono', monospace; font-size: 8.8pt; background: #F3EDF7; padding: 1px 4px; border-radius: 4px; color: #4A4458; }
+pre { background: #F3EDF7; border-radius: 12px; padding: 10px 14px; font-size: 8.4pt; line-height: 1.4; white-space: pre-wrap; page-break-inside: avoid; border-left: 4px solid #CAC4D0; }
+pre code { background: none; padding: 0; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 10px 0 14px; font-size: 9.2pt; page-break-inside: auto; border: 1px solid #E7E0EC; border-radius: 12px; }
+thead { display: table-header-group; }
+tr { page-break-inside: avoid; }
+th { background: #EADDFF; color: #21005D; text-align: left; font-weight: 600; padding: 7px 9px; }
+th:first-child { border-top-left-radius: 11px; } th:last-child { border-top-right-radius: 11px; }
+td { padding: 6px 9px; border-top: 1px solid #E7E0EC; vertical-align: top; }
+tbody tr:nth-child(even) td { background: #FBF8FD; }
+figure { margin: 14px 0; text-align: center; page-break-inside: avoid; }
+figure img { max-width: 100%; }
+figcaption { font-size: 9pt; color: #49454F; margin-top: 6px; }
+img { max-width: 100%; }
+div.tip, div.info, div.warning, div.note { border-radius: 16px; padding: 10px 14px 8px 14px; margin: 12px 0; page-break-inside: avoid; }
+div.tip { background: #E8F5E9; border-left: 5px solid #1B6C3A; }
+div.info { background: #EADDFF; border-left: 5px solid #6750A4; }
+div.note { background: #F3EDF7; border-left: 5px solid #625B71; }
+div.warning { background: #FFF1D6; border-left: 5px solid #7A5900; }
+div.tip p:first-child, div.info p:first-child, div.warning p:first-child { margin-top: 0; }
+blockquote { margin: 10px 0; padding: 8px 14px; border-left: 4px solid #D0BCFF; color: #49454F; background: #F7F2FA; border-radius: 0 12px 12px 0; }
+hr { border: none; border-top: 1px solid #E7E0EC; margin: 18px 0; }
+.pagebreak { page-break-after: always; }
+/* ---- Inhaltsverzeichnis ---- */
+nav.toc { page-break-after: always; }
+nav.toc .toc-title { font-size: 22pt; font-weight: 600; color: #4F378B; margin: 0 0 18px; }
+nav.toc ul { list-style: none; padding-left: 0; margin: 0; }
+nav.toc > ul > li { margin-top: 8px; }
+nav.toc > ul > li > a { font-weight: 600; font-size: 11pt; color: #1D1B20; }
+nav.toc ul ul { padding-left: 26px; margin-top: 2px; }
+nav.toc ul ul a { color: #49454F; font-size: 9.6pt; }
+nav.toc li { display: block; overflow: hidden; }
+nav.toc a { display: inline; }
+nav.toc .pg { float: right; color: #6750A4; font-weight: 600; font-size: 9.6pt; }
+nav.toc .toc-section-number { display: inline-block; min-width: 30px; color: #7D5260; }
+nav.toc > ul > li { border-bottom: 1px solid #F0EAF5; padding-bottom: 4px; }
+main > h1:first-child, main > section:first-child > h1 { page-break-before: avoid; }
+* { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.mk { font-size: 1px; color: #fff; letter-spacing: 0; }

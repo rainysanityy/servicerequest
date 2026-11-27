@@ -1,0 +1,64 @@
+---
+# Netz, aus dem SSH-Administration erlaubt ist
+srp_admin_cidr: 10.10.0.0/24
+# Personalisierte Admin-Konten (müssen ~/.ssh/authorized_keys besitzen!)
+srp_admin_users: []
+srp_user: srp
+srp_app_dir: /srv/srp/app
+srp_install_docker: true
+srp_ntp_servers:
+  - ntp1.example.local
+  - ntp2.example.local
+
+srp_packages:
+  - policycoreutils-python-utils
+  - setools-console
+  - audit
+  - aide
+  - chrony
+  - firewalld
+  - age
+  - openssl
+  - jq
+  - libpwquality
+  - fuse-overlayfs
+  - slirp4netns
+  - python3-libselinux
+  - python3-policycoreutils
+  - python3-firewall
+
+srp_remove_packages:
+  - telnet
+  - telnet-server
+  - rsh
+  - rsh-server
+  - ypbind
+  - tftp
+  - tftp-server
+  - talk
+  - xinetd
+  - vsftpd
+
+srp_disabled_services:
+  - avahi-daemon.service
+  - avahi-daemon.socket
+  - cups.service
+  - cups.socket
+  - bluetooth.service
+  - ModemManager.service
+  - rpcbind.service
+  - rpcbind.socket
+  - nfs-server.service
+  - cockpit.socket
+  - kdump.service
+
+srp_selinux_booleans:
+  - { name: container_manage_cgroup, state: false }
+  - { name: container_use_devices, state: false }
+  - { name: container_connect_any, state: false }
+  - { name: virt_use_nfs, state: false }
+  - { name: virt_use_samba, state: false }
+  - { name: selinuxuser_execheap, state: false }
+  - { name: selinuxuser_execstack, state: false }
+  - { name: ssh_sysadm_login, state: false }
+  - { name: deny_ptrace, state: true }

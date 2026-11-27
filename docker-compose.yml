@@ -1,0 +1,309 @@
+# =============================================================================
+#  IT-Service-Request-Portal – Docker Compose (Produktion / Rootless)
+# -----------------------------------------------------------------------------
+#  Netzsegmente (Zero-Trust / Least Privilege):
+#    edge      : nur der Reverse Proxy ist von außen erreichbar (8443/8080)
+#    app       : Proxy <-> Frontend / Backend / Keycloak       (internal)
+#    data      : Backend/Migrator <-> PostgreSQL (Portal-DB)    (internal)
+#    iam-data  : Keycloak <-> PostgreSQL (Keycloak-DB)          (internal)
+#  Alle Container: non-root, read-only rootfs, cap_drop ALL,
+#  no-new-privileges, Ressourcenlimits, Healthchecks.
+# =============================================================================
+name: srp
+
+x-hardening: &hardening
+  restart: unless-stopped
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  pids_limit: 256
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+      tag: "{{.Name}}"
+
+services:
+  # ---------------------------------------------------------------------------
+  # Reverse Proxy (TLS-Terminierung, Security-Header, Rate Limiting)
+  # ---------------------------------------------------------------------------
+  proxy:
+    <<: *hardening
+    build:
+      context: ./proxy
+    image: srp/proxy:${PORTAL_VERSION:-1.0.0}
+    ports:
+      # Rootless: hohe Ports; firewalld leitet 443->8443 und 80->8080 weiter
+      - "${PROXY_HTTPS_PORT:-8443}:8443"
+      - "${PROXY_HTTP_PORT:-8080}:8080"
+    environment:
+      PORTAL_HOSTNAME: ${PORTAL_HOSTNAME}
+      ADMIN_ALLOW_CIDR: ${ADMIN_ALLOW_CIDR:-10.0.0.0/8}
+    volumes:
+      - ./proxy/certs:/etc/nginx/certs:ro,Z
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /var/cache/nginx:size=64m,uid=101
+      - /etc/nginx/conf.d:size=1m,uid=101
+    networks:
+      - edge
+      - app
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "--no-check-certificate", "https://127.0.0.1:8443/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 256M }
+
+  # ---------------------------------------------------------------------------
+  # Frontend (statische SPA, nginx-unprivileged)
+  # ---------------------------------------------------------------------------
+  frontend:
+    <<: *hardening
+    build:
+      context: ./frontend
+    image: srp/frontend:${PORTAL_VERSION:-1.0.0}
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+      - /var/cache/nginx:size=32m,uid=101
+    networks:
+      - app
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 128M }
+
+  # ---------------------------------------------------------------------------
+  # Backend-API (Node.js / Fastify, distroless, non-root)
+  # ---------------------------------------------------------------------------
+  backend:
+    <<: *hardening
+    build:
+      context: ./backend
+    image: srp/backend:${PORTAL_VERSION:-1.0.0}
+    environment:
+      NODE_ENV: production
+      TZ: Europe/Berlin
+      PORT: "3000"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PUBLIC_ORIGIN: https://${PORTAL_HOSTNAME}
+      OIDC_ISSUER: https://${PORTAL_HOSTNAME}/auth/realms/${KEYCLOAK_REALM:-itportal}
+      OIDC_JWKS_URL: http://keycloak:8080/auth/realms/${KEYCLOAK_REALM:-itportal}/protocol/openid-connect/certs
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-portal-api}
+      OIDC_ALLOWED_AZP: ${OIDC_ALLOWED_AZP:-portal-frontend}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${PORTAL_DB_NAME:-portal}
+      DB_USER: portal_app
+      DB_PASSWORD_FILE: /run/secrets/portal_app_db_password
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-300}
+      RETENTION_TICKET_DAYS: ${RETENTION_TICKET_DAYS:-1095}
+      RETENTION_AUDIT_DAYS: ${RETENTION_AUDIT_DAYS:-365}
+      RETENTION_IP_DAYS: ${RETENTION_IP_DAYS:-90}
+    secrets:
+      - portal_app_db_password
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    networks:
+      - app
+      - data
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "/nodejs/bin/node", "dist/healthcheck.js"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+  # ---------------------------------------------------------------------------
+  # Einmaliger Migrations-Job (Schema-Owner, getrennt von der App-Rolle)
+  # ---------------------------------------------------------------------------
+  migrate:
+    <<: *hardening
+    restart: "no"
+    image: srp/backend:${PORTAL_VERSION:-1.0.0}
+    command: ["dist/migrate.js"]
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${PORTAL_DB_NAME:-portal}
+      DB_USER: portal_migrator
+      DB_PASSWORD_FILE: /run/secrets/portal_migrator_db_password
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
+      MIGRATIONS_DIR: /app/migrations
+    secrets:
+      - portal_migrator_db_password
+    networks:
+      - data
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL (Portal-Daten)
+  # ---------------------------------------------------------------------------
+  db:
+    <<: *hardening
+    image: docker.io/library/postgres:17-alpine
+    user: "70:70"
+    environment:
+      POSTGRES_DB: ${PORTAL_DB_NAME:-portal}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_superuser_password
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --data-checksums"
+    secrets:
+      - postgres_superuser_password
+      - portal_migrator_db_password
+      - portal_app_db_password
+    volumes:
+      - portal_db_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro,Z
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /var/run/postgresql:size=8m,uid=70,gid=70
+    command:
+      - postgres
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - log_connections=on
+      - -c
+      - log_disconnections=on
+      - -c
+      - log_statement=ddl
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${PORTAL_DB_NAME:-portal}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 1G }
+
+  # ---------------------------------------------------------------------------
+  # Keycloak (Identity Provider, OIDC)
+  # ---------------------------------------------------------------------------
+  keycloak:
+    <<: *hardening
+    build:
+      context: ./keycloak
+      args:
+        KEYCLOAK_VERSION: ${KEYCLOAK_VERSION:-26.4}
+    image: srp/keycloak:${PORTAL_VERSION:-1.0.0}
+    # vorgebautes (kc.sh build) Image -> --optimized, read-only rootfs möglich
+    command: ["start", "--optimized", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KC_HOSTNAME: https://${PORTAL_HOSTNAME}/auth
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_LOG_LEVEL: INFO
+      # Platzhalter für den Realm-Import (Redirect-URIs / Web-Origins)
+      PORTAL_HOSTNAME: ${PORTAL_HOSTNAME}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-kc-bootstrap}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      JAVA_OPTS_KC_HEAP: "-XX:MaxRAMPercentage=70"
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import:ro,Z
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+      - /opt/keycloak/data/tmp:size=128m,uid=1000
+    networks:
+      - app
+      - iam-data
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    healthcheck:
+      # Image enthält kein curl -> Bash /dev/tcp gegen Management-Port 9000
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    deploy:
+      resources:
+        limits: { cpus: "2.0", memory: 1536M }
+
+  keycloak-db:
+    <<: *hardening
+    image: docker.io/library/postgres:17-alpine
+    user: "70:70"
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --data-checksums"
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /var/run/postgresql:size=8m,uid=70,gid=70
+    networks:
+      - iam-data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+networks:
+  edge:
+    driver: bridge
+  app:
+    driver: bridge
+    internal: true
+  data:
+    driver: bridge
+    internal: true
+  iam-data:
+    driver: bridge
+    internal: true
+
+volumes:
+  portal_db_data:
+  keycloak_db_data:
+
+secrets:
+  postgres_superuser_password:
+    file: ./secrets/postgres_superuser_password
+  portal_migrator_db_password:
+    file: ./secrets/portal_migrator_db_password
+  portal_app_db_password:
+    file: ./secrets/portal_app_db_password

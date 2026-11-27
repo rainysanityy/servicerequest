@@ -1,0 +1,312 @@
+---
+# =============================================================================
+#  Fedora Server Härtung (BSI IT-Grundschutz / NIST SP 800-53) – Ansible
+#  Aufruf:
+#    ansible-playbook -i inventory.ini site.yml --check --diff   # Trockenlauf
+#    ansible-playbook -i inventory.ini site.yml
+#  Tags: packages, services, selinux, crypto, accounts, ssh, firewall, sysctl,
+#        filesystems, logging, time, updates, aide, docker, backup
+# =============================================================================
+- name: Fedora Server für das IT-Service-Request-Portal härten
+  hosts: portal_servers
+  become: true
+  gather_facts: true
+  vars_files:
+    - group_vars/all.yml
+  vars:
+    files_dir: "{{ playbook_dir }}/../files"
+
+  pre_tasks:
+    - name: Nur Fedora unterstützt
+      ansible.builtin.assert:
+        that: ansible_distribution == "Fedora"
+        fail_msg: "Dieses Playbook ist für Fedora Server vorgesehen"
+
+  handlers:
+    - name: reload sshd
+      ansible.builtin.service: { name: sshd, state: reloaded }
+    - name: reload firewalld
+      ansible.builtin.command: firewall-cmd --reload
+    - name: apply sysctl
+      ansible.builtin.command: sysctl --system
+    - name: restart journald
+      ansible.builtin.service: { name: systemd-journald, state: restarted }
+    - name: load audit rules
+      ansible.builtin.command: augenrules --load
+      failed_when: false
+    - name: restart chronyd
+      ansible.builtin.service: { name: chronyd, state: restarted }
+    - name: daemon reload
+      ansible.builtin.systemd: { daemon_reload: true }
+
+  tasks:
+    # ------------------------------------------------------------ Pakete
+    - name: System aktualisieren
+      ansible.builtin.dnf: { name: "*", state: latest, update_cache: true }
+      tags: [packages]
+    - name: Benötigte Pakete installieren
+      ansible.builtin.dnf: { name: "{{ srp_packages }}", state: present }
+      tags: [packages]
+    - name: Unsichere/unnötige Pakete entfernen
+      ansible.builtin.dnf: { name: "{{ srp_remove_packages }}", state: absent }
+      tags: [packages]
+
+    # ------------------------------------------------------------ Dienste
+    - name: Nicht benötigte Dienste deaktivieren
+      ansible.builtin.systemd: { name: "{{ item }}", state: stopped, enabled: false }
+      loop: "{{ srp_disabled_services }}"
+      failed_when: false
+      tags: [services]
+    - name: Ctrl-Alt-Del maskieren
+      ansible.builtin.systemd: { name: ctrl-alt-del.target, masked: true }
+      tags: [services]
+    - name: Kernelmodule sperren
+      ansible.builtin.copy: { src: "{{ files_dir }}/modprobe/90-bsi-blacklist.conf", dest: /etc/modprobe.d/90-bsi-blacklist.conf, mode: "0644" }
+      tags: [services]
+
+    # ------------------------------------------------------------ SELinux
+    - name: SELinux enforcing (targeted)
+      ansible.posix.selinux: { policy: targeted, state: enforcing }
+      tags: [selinux]
+    - name: SELinux-Booleans restriktiv setzen
+      ansible.posix.seboolean: { name: "{{ item.name }}", state: "{{ item.state }}", persistent: true }
+      loop: "{{ srp_selinux_booleans }}"
+      failed_when: false
+      tags: [selinux]
+
+    # ------------------------------------------------------------ Kryptografie
+    - name: Prüfen, ob BSI-Crypto-Policy verfügbar ist
+      ansible.builtin.stat: { path: /usr/share/crypto-policies/policies/BSI.pol }
+      register: bsi_pol
+      tags: [crypto]
+    - name: Systemweite Kryptorichtlinie setzen
+      ansible.builtin.command: "update-crypto-policies --set {{ 'BSI' if bsi_pol.stat.exists else 'DEFAULT:NO-SHA1' }}"
+      changed_when: true
+      tags: [crypto]
+
+    # ------------------------------------------------------------ Konten
+    - name: pwquality / faillock / sudo / umask
+      ansible.builtin.copy: { src: "{{ files_dir }}/{{ item.src }}", dest: "{{ item.dest }}", mode: "{{ item.mode }}", validate: "{{ item.validate | default(omit) }}" }
+      loop:
+        - { src: security/90-bsi-pwquality.conf, dest: /etc/security/pwquality.conf.d/90-bsi.conf, mode: "0644" }
+        - { src: security/faillock.conf, dest: /etc/security/faillock.conf, mode: "0644" }
+        - { src: sudoers/90-bsi, dest: /etc/sudoers.d/90-bsi, mode: "0440", validate: "visudo -cf %s" }
+        - { src: misc/umask.sh, dest: /etc/profile.d/99-umask.sh, mode: "0644" }
+      tags: [accounts]
+    - name: authselect faillock
+      ansible.builtin.command: authselect enable-feature with-faillock
+      changed_when: false
+      failed_when: false
+      tags: [accounts]
+    - name: login.defs UMASK 027
+      ansible.builtin.lineinfile: { path: /etc/login.defs, regexp: "^UMASK", line: "UMASK\t\t027" }
+      tags: [accounts]
+    - name: Gruppe sshusers
+      ansible.builtin.group: { name: sshusers, system: true }
+      tags: [accounts, ssh]
+    - name: Admin-Konten in sshusers/wheel
+      ansible.builtin.user: { name: "{{ item }}", groups: [sshusers, wheel], append: true }
+      loop: "{{ srp_admin_users }}"
+      tags: [accounts, ssh]
+    - name: Root-Passwort sperren
+      ansible.builtin.user: { name: root, password_lock: true }
+      tags: [accounts]
+
+    # ------------------------------------------------------------ SSH
+    - name: Banner
+      ansible.builtin.copy: { src: "{{ files_dir }}/misc/issue.net", dest: /etc/issue.net, mode: "0644" }
+      tags: [ssh]
+    - name: sshd-Härtung (validiert)
+      ansible.builtin.copy:
+        src: "{{ files_dir }}/ssh/00-bsi-hardening.conf"
+        dest: /etc/ssh/sshd_config.d/00-bsi-hardening.conf
+        mode: "0600"
+        validate: "sshd -t -f %s"
+      notify: reload sshd
+      tags: [ssh]
+
+    # ------------------------------------------------------------ Firewall
+    - name: firewalld aktiv
+      ansible.builtin.systemd: { name: firewalld, state: started, enabled: true }
+      tags: [firewall]
+    - name: Zone srp (Default DROP)
+      ansible.builtin.template: { src: srp-zone.xml.j2, dest: /etc/firewalld/zones/srp.xml, mode: "0644" }
+      notify: reload firewalld
+      tags: [firewall]
+    - name: Firewall neu laden, bevor Interfaces zugewiesen werden
+      ansible.builtin.meta: flush_handlers
+      tags: [firewall]
+    - name: Interface der Zone srp zuweisen
+      ansible.posix.firewalld: { zone: srp, interface: "{{ ansible_default_ipv4.interface }}", permanent: true, immediate: true, state: enabled }
+      tags: [firewall]
+    - name: Default-Zone und Logging
+      ansible.builtin.command: "{{ item }}"
+      loop:
+        - firewall-cmd --set-default-zone=srp
+        - firewall-cmd --set-log-denied=unicast
+      changed_when: false
+      tags: [firewall]
+
+    # ------------------------------------------------------------ Kernel
+    - name: sysctl-Härtung
+      ansible.builtin.copy: { src: "{{ files_dir }}/sysctl/90-bsi-hardening.conf", dest: /etc/sysctl.d/90-bsi-hardening.conf, mode: "0644" }
+      notify: apply sysctl
+      tags: [sysctl]
+    - name: Coredumps deaktivieren
+      ansible.builtin.copy:
+        dest: /etc/systemd/coredump.conf.d/90-bsi.conf
+        content: "[Coredump]\nStorage=none\nProcessSizeMax=0\n"
+        mode: "0644"
+      tags: [sysctl]
+
+    # ------------------------------------------------------------ Dateisysteme
+    - name: /tmp-Mountoptionen
+      ansible.builtin.copy: { src: "{{ files_dir }}/misc/tmp.mount.conf", dest: /etc/systemd/system/tmp.mount.d/90-bsi.conf, mode: "0644" }
+      notify: daemon reload
+      tags: [filesystems]
+    - name: /dev/shm nosuid,nodev,noexec
+      ansible.posix.mount: { path: /dev/shm, src: tmpfs, fstype: tmpfs, opts: "defaults,nosuid,nodev,noexec", state: mounted }
+      tags: [filesystems]
+
+    # ------------------------------------------------------------ Protokollierung
+    - name: Audit-Regeln
+      ansible.builtin.copy: { src: "{{ files_dir }}/audit/90-bsi.rules", dest: /etc/audit/rules.d/90-bsi.rules, mode: "0640" }
+      notify: load audit rules
+      tags: [logging]
+    - name: auditd.conf Aktionen
+      ansible.builtin.lineinfile: { path: /etc/audit/auditd.conf, regexp: "^{{ item.k }}\\s*=", line: "{{ item.k }} = {{ item.v }}" }
+      loop:
+        - { k: max_log_file_action, v: keep_logs }
+        - { k: space_left_action, v: email }
+        - { k: admin_space_left_action, v: single }
+        - { k: disk_full_action, v: halt }
+      tags: [logging]
+    - name: auditd aktiv
+      ansible.builtin.systemd: { name: auditd, enabled: true, state: started }
+      tags: [logging]
+    - name: journald persistent & versiegelt
+      ansible.builtin.copy: { src: "{{ files_dir }}/journald/90-bsi.conf", dest: /etc/systemd/journald.conf.d/90-bsi.conf, mode: "0644" }
+      notify: restart journald
+      tags: [logging]
+    - name: Journal-Verzeichnis
+      ansible.builtin.file: { path: /var/log/journal, state: directory, mode: "2755" }
+      tags: [logging]
+
+    # ------------------------------------------------------------ Zeit
+    - name: NTP-Quellen
+      ansible.builtin.copy:
+        dest: /etc/chrony.d/90-srp-sources.conf
+        content: "{% for s in srp_ntp_servers %}server {{ s }} iburst\n{% endfor %}"
+        mode: "0644"
+      notify: restart chronyd
+      tags: [time]
+    - name: chronyd aktiv
+      ansible.builtin.systemd: { name: chronyd, enabled: true, state: started }
+      tags: [time]
+
+    # ------------------------------------------------------------ Updates
+    - name: dnf-automatic Konfiguration
+      ansible.builtin.copy: { src: "{{ files_dir }}/dnf/automatic.conf", dest: /etc/dnf/automatic.conf, mode: "0644" }
+      tags: [updates]
+    - name: dnf(5)-automatic Timer aktivieren
+      ansible.builtin.shell: |
+        if systemctl list-unit-files dnf5-automatic.timer >/dev/null 2>&1; then
+          systemctl enable --now dnf5-automatic.timer
+        else
+          systemctl enable --now dnf-automatic.timer
+        fi
+      changed_when: false
+      tags: [updates]
+
+    # ------------------------------------------------------------ AIDE
+    - name: AIDE-Datenbank initialisieren
+      ansible.builtin.shell: aide --init && mv -f /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
+      args: { creates: /var/lib/aide/aide.db.gz }
+      tags: [aide]
+    - name: AIDE-Timer
+      ansible.builtin.copy: { src: "{{ files_dir }}/systemd/{{ item }}", dest: "/etc/systemd/system/{{ item }}", mode: "0644" }
+      loop: [aide-check.service, aide-check.timer]
+      notify: daemon reload
+      tags: [aide]
+    - name: AIDE-Timer aktiv
+      ansible.builtin.systemd: { name: aide-check.timer, enabled: true, state: started, daemon_reload: true }
+      tags: [aide]
+
+    # ------------------------------------------------------------ Docker rootless
+    - name: Dienstkonto
+      ansible.builtin.user: { name: "{{ srp_user }}", system: true, create_home: true, shell: /sbin/nologin }
+      tags: [docker]
+    - name: subuid/subgid
+      ansible.builtin.lineinfile: { path: "{{ item }}", regexp: "^{{ srp_user }}:", line: "{{ srp_user }}:200000:65536" }
+      loop: [/etc/subuid, /etc/subgid]
+      tags: [docker]
+    - name: Verzeichnisse
+      ansible.builtin.file: { path: "{{ item.p }}", state: directory, owner: "{{ srp_user }}", group: "{{ srp_user }}", mode: "{{ item.m }}" }
+      loop:
+        - { p: /srv/srp, m: "0750" }
+        - { p: "{{ srp_app_dir }}", m: "0750" }
+        - { p: /srv/backup/srp, m: "0700" }
+      tags: [docker, backup]
+    - name: Docker-CE-Repository
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/fedora/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: "0644"
+      when: srp_install_docker
+      tags: [docker]
+    - name: Docker CE + rootless extras
+      ansible.builtin.dnf:
+        name: [docker-ce, docker-ce-cli, containerd.io, docker-buildx-plugin, docker-compose-plugin, docker-ce-rootless-extras]
+        state: present
+      when: srp_install_docker
+      tags: [docker]
+    - name: Rootful Docker deaktivieren
+      ansible.builtin.systemd: { name: "{{ item }}", state: stopped, enabled: false }
+      loop: [docker.service, docker.socket]
+      failed_when: false
+      tags: [docker]
+    - name: Linger für Dienstkonto
+      ansible.builtin.command: "loginctl enable-linger {{ srp_user }}"
+      args: { creates: "/var/lib/systemd/linger/{{ srp_user }}" }
+      tags: [docker]
+    - name: Rootless-Docker-Konfiguration
+      ansible.builtin.copy: { src: "{{ files_dir }}/{{ item.src }}", dest: "/home/{{ srp_user }}/{{ item.dest }}", owner: "{{ srp_user }}", group: "{{ srp_user }}", mode: "0644" }
+      loop:
+        - { src: docker/daemon.json, dest: .config/docker/daemon.json }
+        - { src: docker/rootless-override.conf, dest: .config/systemd/user/docker.service.d/override.conf }
+      tags: [docker]
+    - name: Rootless Docker einrichten
+      ansible.builtin.shell: |
+        export XDG_RUNTIME_DIR=/run/user/$(id -u)
+        dockerd-rootless-setuptool.sh install --skip-iptables
+        systemctl --user daemon-reload
+        systemctl --user enable --now docker
+      become_user: "{{ srp_user }}"
+      args: { creates: "/home/{{ srp_user }}/.config/systemd/user/docker.service" }
+      when: srp_install_docker
+      tags: [docker]
+
+    # ------------------------------------------------------------ Backup
+    - name: UID des Dienstkontos
+      ansible.builtin.command: "id -u {{ srp_user }}"
+      register: srp_uid
+      changed_when: false
+      tags: [backup]
+    - name: Backup-Service
+      ansible.builtin.template: { src: srp-backup.service.j2, dest: /etc/systemd/system/srp-backup.service, mode: "0644" }
+      tags: [backup]
+    - name: Backup-Timer
+      ansible.builtin.copy: { src: "{{ files_dir }}/systemd/srp-backup.timer", dest: /etc/systemd/system/srp-backup.timer, mode: "0644" }
+      tags: [backup]
+    - name: Backup-Timer aktivieren
+      ansible.builtin.systemd: { name: srp-backup.timer, enabled: true, daemon_reload: true }
+      tags: [backup]
+
+  post_tasks:
+    - name: Compliance-Prüfung ausführen
+      ansible.builtin.script: ../scripts/verify.sh
+      register: verify
+      failed_when: false
+      changed_when: false
+    - name: Ergebnis
+      ansible.builtin.debug: { var: verify.stdout_lines }

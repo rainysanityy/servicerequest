@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" font-family="Inter, sans-serif" font-size="13">
+  <defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#49454F"/></marker></defs>
+  <rect width="900" height="360" fill="#fff"/>
+  <!-- states -->
+  <g font-weight="700" text-anchor="middle">
+    <rect x="20" y="140" width="120" height="52" rx="26" fill="#EADDFF"/><text x="80" y="171" fill="#21005D">Neu</text>
+    <rect x="220" y="140" width="150" height="52" rx="26" fill="#FFD8E4"/><text x="295" y="171" fill="#31111D">In Bearbeitung</text>
+    <rect x="220" y="20" width="150" height="52" rx="26" fill="#FFDF9E"/><text x="295" y="51" fill="#261A00">Rückfrage</text>
+    <rect x="220" y="270" width="170" height="52" rx="26" fill="#E8DEF8"/><text x="305" y="301" fill="#1D192B">Wartet auf Freigabe</text>
+    <rect x="470" y="140" width="120" height="52" rx="26" fill="#A6F4B5"/><text x="530" y="171" fill="#00210C">Gelöst</text>
+    <rect x="680" y="140" width="150" height="52" rx="26" fill="#E6E0E9"/><text x="755" y="171" fill="#1D1B20">Geschlossen</text>
+    <rect x="680" y="270" width="150" height="52" rx="26" fill="#F9DEDC"/><text x="755" y="301" fill="#410E0B">Abgelehnt</text>
+    <rect x="20" y="270" width="140" height="52" rx="26" fill="#E6E0E9"/><text x="90" y="301" fill="#1D1B20">Zurückgezogen</text>
+  </g>
+  <g stroke="#49454F" stroke-width="2" fill="none" marker-end="url(#m)">
+    <path d="M140 166 H216"/>
+    <path d="M270 140 V76"/>
+    <path d="M320 76 V136"/>
+    <path d="M280 192 V266"/>
+    <path d="M330 266 V196"/>
+    <path d="M370 166 H466"/>
+    <path d="M590 166 H676"/>
+    <path d="M530 192 C530 240 400 240 360 196"/>
+    <path d="M390 300 H676"/>
+    <path d="M80 192 V266"/>
+    <path d="M372 184 C560 196 700 214 740 266"/>
+  </g>
+  <g font-size="11" fill="#49454F">
+    <text x="146" y="158">annehmen</text>
+    <text x="150" y="110">Support fragt nach</text>
+    <text x="328" y="110">Antwort (automatisch)</text>
+    <text x="170" y="236">Freigabe nötig</text>
+    <text x="336" y="236">freigegeben</text>
+    <text x="380" y="158">Lösung</text>
+    <text x="598" y="158">bestätigt</text>
+    <text x="420" y="250">nicht gelöst (erneut öffnen)</text>
+    <text x="470" y="292">abgelehnt</text>
+    <text x="88" y="236">vom Nutzer</text>
+    <text x="660" y="236">abgelehnt</text>
+  </g>
+</svg>

@@ -1,0 +1,20 @@
+[Unit]
+Description=IT-Service-Portal – verschlüsseltes Datenbank-Backup
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=srp
+Group=srp
+WorkingDirectory=/srv/srp/app
+Environment=XDG_RUNTIME_DIR=/run/user/@SRP_UID@
+Environment=DOCKER_HOST=unix:///run/user/@SRP_UID@/docker.sock
+ExecStart=/srv/srp/app/scripts/backup.sh
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/srv/backup/srp /srv/srp/app

@@ -1,0 +1,7 @@
+{
+  "keycloakUrl": "",
+  "realm": "itportal",
+  "clientId": "portal-frontend",
+  "supportPhone": "+49 30 1234-5000",
+  "supportHours": "Mo–Fr 08:00–17:00"
+}
