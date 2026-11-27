@@ -57,8 +57,16 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder
 
 <table>
   <tr>
+    <td width="50%"><img src="docs/screenshots/22-statistik-admin.png" alt="Statistik Überblick"><br><sub><b>Statistik</b> – Service-Überblick mit Diagrammen</sub></td>
+    <td width="50%"><img src="docs/screenshots/23-statistik-support.png" alt="Statistik Support-Betrieb"><br><sub><b>Statistik</b> – Support-Betrieb (UHD & Admin)</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/24-statistik-administration.png" alt="Statistik Administration"><br><sub><b>Statistik</b> – Administration (nur Admin)</sub></td>
+    <td width="50%"><img src="docs/screenshots/25-statistik-mitarbeitende.png" alt="Statistik Mitarbeitende"><br><sub><b>Statistik</b> – allgemeine Ansicht für Mitarbeitende</sub></td>
+  </tr>
+  <tr>
     <td width="50%"><img src="docs/screenshots/16-admin-benutzer-rollen.png" alt="Admin: Benutzer und Rollen"><br><sub><b>Benutzer & Rollen</b> – Mitarbeitende / UHD / Admin vergeben, sperren</sub></td>
-    <td width="50%"><img src="docs/screenshots/17-registrierung-dunkel.png" alt="Selbstregistrierung in Keycloak"><br><sub><b>Selbstregistrierung</b> – eigenes Keycloak-Theme, mit E-Mail-Bestätigung</sub></td>
+    <td width="50%"><img src="docs/screenshots/17-registrierung-dunkel.png" alt="Selbstregistrierung in Keycloak"><br><sub><b>Selbstregistrierung</b> – eigenes Keycloak-Theme, ohne Mailserver</sub></td>
   </tr>
   <tr>
     <td width="50%"><img src="docs/screenshots/19-login-dunkel.png" alt="Keycloak-Login im Darkmode"><br><sub><b>Anmeldung</b> – Keycloak-Theme <code>itportal</code>, Darkmode</sub></td>
