@@ -29,11 +29,21 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Build
         run: npm run build
+      - name: Keycloak für Registrierungsseite starten
+        working-directory: .
+        run: |
+          mkdir -p /tmp/kcimport && chmod 755 /tmp/kcimport
+          jq '.sslRequired = "external"' keycloak/import/itportal-realm.json > /tmp/kcimport/itportal-realm.json
+          chmod 644 /tmp/kcimport/itportal-realm.json
+          docker run -d --name kc -p 8080:8080 -v /tmp/kcimport:/opt/keycloak/data/import:ro \
+            -e KC_HTTP_RELATIVE_PATH=/auth -e PORTAL_HOSTNAME=localhost -e KEYCLOAK_ADMIN_API_SECRET=screenshot-only-secret-0123456789 \
+            quay.io/keycloak/keycloak:26.4 start-dev --import-realm
+          for i in $(seq 1 90); do curl -sf http://localhost:8080/auth/realms/itportal/.well-known/openid-configuration >/dev/null && break; sleep 2; done
       - name: Screenshots aufnehmen
         run: |
           npx vite preview --port 4173 --strictPort &
           npx --yes wait-on http://localhost:4173 -t 60000
-          node screenshots/capture.mjs http://localhost:4173 ../docs/screenshots
+          KC_URL=http://localhost:8080/auth node screenshots/capture.mjs http://localhost:4173 ../docs/screenshots
       - uses: actions/upload-artifact@v4
         with:
           name: screenshots

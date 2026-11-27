@@ -186,6 +186,28 @@ function apiResponse(path, persona) {
     { id: 's3', category_id: 'hardware', title: 'Bundle ausgeliefert', body: '…' },
     { id: 's2', category_id: null, title: 'Neustart & Updates', body: '…' }];
   if (p === '/api/admin/workflow') return workflow;
+  if (p === '/api/admin/users/status') return { enabled: true };
+  if (p === '/api/admin/roles') return {
+    expectedRoles: [
+      { role: 'user', keycloakGroup: '/Mitarbeitende', description: 'Requests erstellen, eigene Tickets einsehen/kommentieren (Standard bei Selbstregistrierung)' },
+      { role: 'first-level', keycloakGroup: '/IT-UHD', description: 'Tickets sichten, zuweisen, bearbeiten, interne Notizen' },
+      { role: 'admin', keycloakGroup: '/IT-Portal-Admins', description: 'Katalog, Workflow, SLA, Benutzer & Rollen, Audit' }],
+    counts: { user: 214, 'first-level': 6, admin: 2 }, warnings: [], users: [] };
+  if (p === '/api/admin/users') {
+    const rows = [
+      ['u-alex', 'alex.admin', 'Alex Admin', 'admin', true, true],
+      ['u-uwe', 'uwe.helpdesk', 'Uwe Helpdesk', 'first-level', true, true],
+      ['u-sara', 'sara.ohm', 'Sara Ohm', 'first-level', true, true],
+      ['u-anna', 'anna.mueller', 'Anna Müller', 'user', true, true],
+      ['u-jonas', 'jonas.weber', 'Jonas Weber', 'user', true, true],
+      ['u-lisa', 'lisa.schneider', 'Lisa Schneider', 'user', true, true],
+      ['u-mehmet', 'mehmet.yilmaz', 'Mehmet Yilmaz', 'user', true, false],
+      ['u-tom', 'tom.becker', 'Tom Becker', 'user', false, true],
+    ];
+    return { items: rows.map(([id, username, name, role, enabled, verified], i) => ({
+      id, username, name, email: `${username}@example.com`, emailVerified: verified, enabled, role,
+      createdAt: ago(24 * (i + 1) * 9) })), total: 222, page: 1, pageSize: 20, counts: { admin: 2, 'first-level': 6 } };
+  }
   if (p === '/api/admin/audit') return audit;
   return {};
 }
@@ -303,12 +325,25 @@ try {
   });
   await shot(alex, '/admin/workflow', '12-admin-workflow');
   await shot(alex, '/admin/audit', '13-admin-audit');
+  await shot(alex, '/admin/rollen', '16-admin-benutzer-rollen');
   await alex.close();
 
   const mobile = await newContext(browser, P.anna, { dark: true, mobile: true });
   await shot(mobile, '/', '14-mobil-startseite');
   await shot(mobile, `/tickets/${SR_DETAIL.id}`, '15-mobil-ticket');
   await mobile.close();
+  // Echte Keycloak-Registrierungsseite (falls KC_URL gesetzt, z. B. im Screenshot-Workflow)
+  if (process.env.KC_URL) {
+    for (const [dark, name] of [[true, '17-registrierung-dunkel'], [false, '18-registrierung-hell']]) {
+      const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, colorScheme: dark ? 'dark' : 'light', locale: 'de-DE' });
+      const page = await ctx.newPage();
+      await page.goto(`${process.env.KC_URL}/realms/itportal/protocol/openid-connect/registrations?client_id=portal-frontend&response_type=code&scope=openid&redirect_uri=https%3A%2F%2Flocalhost%2F&code_challenge=E9Melhoe2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&kc_locale=de`);
+      await page.waitForLoadState('networkidle');
+      await page.screenshot({ path: `${OUT}/${name}.png` });
+      console.log('✓', name);
+      await ctx.close();
+    }
+  }
 } finally {
   await browser.close();
 }
