@@ -1,0 +1,40 @@
+name: Screenshots
+
+# Erzeugt die UI-Screenshots für die README (Playwright, simulierte Keycloak/API-Daten).
+# Manuell starten: Actions → Screenshots → Run workflow. Ergebnis als Artefakt "screenshots".
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Schriften (Roboto) installieren
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-roboto fonts-roboto-unhinted
+      - name: Abhängigkeiten
+        run: |
+          if [ -f package-lock.json ]; then npm ci --ignore-scripts; else npm install --ignore-scripts --no-audit; fi
+          npm install --no-save --ignore-scripts playwright@1
+          npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Screenshots aufnehmen
+        run: |
+          npx vite preview --port 4173 --strictPort &
+          npx --yes wait-on http://localhost:4173 -t 60000
+          node screenshots/capture.mjs http://localhost:4173 ../docs/screenshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: docs/screenshots/*.png
+          retention-days: 7
