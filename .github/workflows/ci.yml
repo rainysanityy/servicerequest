@@ -114,10 +114,16 @@ jobs:
             curl -sf "$KC/realms/itportal/.well-known/openid-configuration" >/dev/null && break; sleep 2
           done
           curl -sf "$KC/realms/itportal/.well-known/openid-configuration" >/dev/null || { docker logs kc | tail -80; exit 1; }
-      - name: Registrierungsseite erreichbar
+      - name: Registrierungsseite erreichbar (PKCE erforderlich)
         run: |
-          code=$(curl -s -o page.html -w '%{http_code}' "$KC/realms/itportal/protocol/openid-connect/registrations?client_id=portal-frontend&response_type=code&scope=openid&redirect_uri=https%3A%2F%2Flocalhost%2F")
-          test "$code" = 200 && grep -qi 'register' page.html
+          CH=E9Melhoe2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM
+          U="$KC/realms/itportal/protocol/openid-connect/registrations?client_id=portal-frontend&response_type=code&scope=openid&redirect_uri=https%3A%2F%2Flocalhost%2F"
+          code=$(curl -s -o page.html -w '%{http_code}' "$U&code_challenge=$CH&code_challenge_method=S256")
+          echo "HTTP $code"; test "$code" = 200 || { head -c 2000 page.html; exit 1; }
+          grep -qi 'kc-register-form\|registration' page.html
+          # ohne PKCE muss die Anfrage abgelehnt werden
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$U")
+          echo "ohne PKCE: HTTP $code"; test "$code" != 200 -o -n "$(curl -s "$U" | grep -i 'code_challenge')"
       - name: Admin-API über Service-Account (wie das Backend)
         run: |
           set -e
