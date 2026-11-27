@@ -1,16 +1,40 @@
+# Dependabot: nur Minor-/Patch-Updates und Sicherheitskorrekturen.
+# Major-Updates (Breaking Changes, z. B. React 18 -> 19, zod 3 -> 4, Node 22 -> 26)
+# werden bewusst manuell geplant und getestet.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /backend
-    schedule: { interval: weekly }
+    schedule: { interval: weekly, day: monday }
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      backend-minor-patch:
+        update-types: [minor, patch]
+
   - package-ecosystem: npm
     directory: /frontend
-    schedule: { interval: weekly }
+    schedule: { interval: weekly, day: monday }
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      frontend-minor-patch:
+        update-types: [minor, patch]
+
   - package-ecosystem: docker
     directories: [/backend, /frontend, /proxy, /keycloak]
-    schedule: { interval: weekly }
+    schedule: { interval: weekly, day: monday }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: monthly }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
