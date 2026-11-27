@@ -334,11 +334,16 @@ try {
   await mobile.close();
   // Echte Keycloak-Registrierungsseite (falls KC_URL gesetzt, z. B. im Screenshot-Workflow)
   if (process.env.KC_URL) {
-    for (const [dark, name] of [[true, '17-registrierung-dunkel'], [false, '18-registrierung-hell']]) {
-      const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, colorScheme: dark ? 'dark' : 'light', locale: 'de-DE' });
+    const q = 'client_id=portal-frontend&response_type=code&scope=openid&redirect_uri=https%3A%2F%2Flocalhost%2F&code_challenge=E9Melhoe2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&kc_locale=de';
+    for (const [dark, name, ep, mobile] of [
+      [true, '17-registrierung-dunkel', 'registrations', false], [false, '18-registrierung-hell', 'registrations', false],
+      [true, '19-login-dunkel', 'auth', false], [false, '20-login-hell', 'auth', false], [true, '21-login-mobil', 'auth', true],
+    ]) {
+      const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 }, deviceScaleFactor: mobile ? 3 : 2, colorScheme: dark ? 'dark' : 'light', locale: 'de-DE', isMobile: mobile });
       const page = await ctx.newPage();
-      await page.goto(`${process.env.KC_URL}/realms/itportal/protocol/openid-connect/registrations?client_id=portal-frontend&response_type=code&scope=openid&redirect_uri=https%3A%2F%2Flocalhost%2F&code_challenge=E9Melhoe2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&kc_locale=de`);
+      await page.goto(`${process.env.KC_URL}/realms/itportal/protocol/openid-connect/${ep}?${q}`);
       await page.waitForLoadState('networkidle');
+      await page.evaluate(() => document.fonts.ready);
       await page.screenshot({ path: `${OUT}/${name}.png` });
       console.log('✓', name);
       await ctx.close();

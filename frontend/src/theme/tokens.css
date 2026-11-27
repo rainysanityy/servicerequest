@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'Roboto Portal';
+  src: url('/fonts/roboto-latin.woff') format('woff');
+  font-weight: 100 900;
+  font-stretch: 75% 100%;
+  font-display: swap;
+}
+
 /* =============================================================================
    Material 3 Expressive – Design Tokens
    Statische Fallback-Farben (Seed #6750A4). Zur Laufzeit überschreibt
@@ -48,8 +56,8 @@
   --md-ext-color-on-warning-container: #261a00;
 
   /* ---- Typografie (Expressive: starke Hierarchie, Roboto Flex) --------- */
-  --md-ref-typeface-brand: 'Roboto Flex', 'Roboto', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --md-ref-typeface-plain: 'Roboto Flex', 'Roboto', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --md-ref-typeface-brand: 'Roboto Portal', 'Roboto Flex', 'Roboto', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --md-ref-typeface-plain: 'Roboto Portal', 'Roboto Flex', 'Roboto', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --md-ref-typeface-mono: 'Roboto Mono', 'DejaVu Sans Mono', ui-monospace, monospace;
 
   /* ---- Form (Shape) – Expressive Skala ---------------------------------- */
