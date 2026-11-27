@@ -1,12 +1,13 @@
 name: Screenshots
 
 # Erzeugt die UI-Screenshots für die README (Playwright, simulierte Keycloak/API-Daten).
-# Manuell starten: Actions → Screenshots → Run workflow. Ergebnis als Artefakt "screenshots".
+# Manuell starten: Actions → Screenshots → Run workflow.
+# Ergebnis: Artefakt "screenshots" + Branch "screenshots-update" (zur Prüfung/Übernahme per Merge).
 on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   capture:
@@ -38,3 +39,12 @@ jobs:
           name: screenshots
           path: docs/screenshots/*.png
           retention-days: 7
+      - name: In Branch screenshots-update committen
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B screenshots-update
+          git add docs/screenshots/*.png
+          git commit -m "docs: UI-Screenshots aktualisiert" || exit 0
+          git push -f origin screenshots-update
