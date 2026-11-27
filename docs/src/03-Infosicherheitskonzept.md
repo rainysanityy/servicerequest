@@ -129,8 +129,12 @@ Bewertung nach BSI 200-3: Eintrittshäufigkeit (selten / mittel / häufig / sehr
 | R13 | G 0.18 Fehlplanung / fehlende Anpassung | Unsichere Konfigurationsänderung (z. B. Workflow, Formular-Regex) | Meta-Schema-Validierung, ReDoS-Schutz, Audit, Vier-Augen-Prinzip für Admin-Änderungen | gering |
 | R14 | G 0.37 Abstreiten von Handlungen | Bearbeiter/in bestreitet Statusänderung | Personenbezogenes Audit-Log mit Request-ID und Zeitstempel, Hash-Kette | gering |
 | R15 | G 0.29 Verstoß gegen Gesetze | Zu lange Speicherung personenbezogener Daten | Automatische Anonymisierung/Löschung (siehe Datenschutzkonzept) | gering |
+| R16 | G 0.32 Missbrauch von Berechtigungen | Neues Benutzerkonto „wie Referenzperson“ übernimmt angesammelte Sonderrechte (Privilege Creep) | Pflichtbestätigung „gleiche Aufgaben“, Feld für Abweichungen, Freigabe durch Vorgesetzte, Prüfung der Referenzrechte durch Support, Befristung, Rezertifizierung | mittel (organisatorisch) |
+| R17 | G 0.19 Offenlegung schützenswerter Informationen | Private Schlüssel werden für Zertifikatsanträge per Ticket übermittelt | Schlüsselerzeugung auf dem Zielsystem, nur CSR, deutliche Warnhinweise im Formular, Support löscht Schlüssel aus Tickets und meldet Vorfall | gering |
+| R18 | G 0.23 Unbefugtes Eindringen | VPN-Zugang für Externe oder administrative Zugänge zu weitreichend | Eigener Katalogeintrag mit Zugangsart, Pflicht-Befristung, Freigabe, nur verwaltete Geräte, MFA | gering |
+| R19 | G 0.18 Fehlplanung | VMs in falschem Netzsegment (z. B. DMZ) oder ohne Backup/Monitoring | Pflichtangaben Netzsegment, Verantwortliche/r, Laufzeit; Prüfung durch Betrieb vor Bereitstellung | gering |
 
-**Risikobehandlung:** Die mittleren Restrisiken R2 und R5 werden durch organisatorische Maßnahmen (Kap. 7) weiter gesenkt und vom ISB im Rahmen der Freigabe akzeptiert.
+**Risikobehandlung:** Die mittleren Restrisiken R2, R5 und R16 werden durch organisatorische Maßnahmen (Kap. 7) weiter gesenkt und vom ISB im Rahmen der Freigabe akzeptiert.
 
 # Technische Maßnahmen
 
@@ -168,7 +172,7 @@ Bewertung nach BSI 200-3: Eintrittshäufigkeit (selten / mittel / häufig / sehr
 **Weitere Detailmaßnahmen:**
 
 * **Input-Validierung:** Jeder Body, Query- und Pfadparameter wird mit `zod` *strict* validiert (unbekannte Felder → 400). Freitexte werden von Steuer- und Bidi-Zeichen bereinigt; Längen sind begrenzt (Body-Limit 64 KiB).
-* **Dynamische Formulare:** Admin-definierte Formulare werden gegen ein Meta-Schema geprüft; reguläre Ausdrücke mit verschachtelten Quantoren (ReDoS) werden abgelehnt. Nutzereingaben werden serverseitig gegen das Formular validiert (Typ, Pflicht, Länge, Muster, Optionen).
+* **Dynamische Formulare:** Admin-definierte Formulare werden gegen ein Meta-Schema geprüft; reguläre Ausdrücke mit verschachtelten Quantoren (ReDoS) werden abgelehnt. Nutzereingaben werden serverseitig gegen das Formular validiert (Typ, Pflicht, Länge, Muster, Optionen, Pflichtbestätigungen). Bedingte Felder (`when`) werden serverseitig ausgewertet: Werte inaktiver Felder werden verworfen, Pflichtangaben nur bei erfüllter Bedingung gefordert; Bundles erzwingen mindestens eine Position (`requireOneOf`).
 * **XSS:** React escaped alle Ausgaben; kein `dangerouslySetInnerHTML`. CSP: `default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'`. Theme-Farben werden per CSSOM gesetzt (CSP-konform).
 * **CSRF:** Die API authentisiert ausschließlich über den `Authorization: Bearer`-Header (keine Cookies) – klassisches CSRF ist damit nicht möglich. Zusätzlich prüft das Backend den `Origin`-Header bei schreibenden Methoden.
 * **Path Traversal:** Die API bietet keine Dateioperationen; statische Dateien liefert nginx aus einem festen Verzeichnis, versteckte Dateien sind gesperrt. Datei-Uploads sind in Release 1.0 bewusst nicht implementiert.

@@ -34,7 +34,7 @@ export default function Home() {
         <div>
           <p className="title-m mt-0">{greeting()}, {firstName}!</p>
           <h1 id="hero-title" className="display-m">Wobei können wir helfen?</h1>
-          <p className="body-l">Neue Hardware, Software, Berechtigungen oder eine allgemeine Frage – stellen Sie Ihre Anfrage in wenigen Schritten.</p>
+          <p className="body-l">Hardware, Software, Telefonie, Zugänge, VMs oder Zertifikate – stellen Sie Ihre Anfrage in wenigen Schritten.</p>
           <div className="hero-actions">
             <Link to="/katalog" className="btn filled large"><Icon name="add" /> Neue Anfrage</Link>
             <Link to="/tickets" className="btn tonal large"><Icon name="list" /> Meine Tickets</Link>

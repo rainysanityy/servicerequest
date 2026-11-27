@@ -101,6 +101,20 @@ Für Katalogeinträge mit Kennzeichen *Freigabe erforderlich* (z. B. Notebooks, 
 3. Ergebnis als **interne Notiz** dokumentieren (wer, wann, Kanal).
 4. Status auf **In Bearbeitung** (freigegeben) oder **Abgelehnt** (mit Begründung) setzen.
 
+### Prüfhinweise je Anfrageart
+
+| Anfrage | Vor Freigabe bzw. Umsetzung prüfen |
+|---|---|
+| **APC, Mobiltelefon, Tablet, Monitor, Bundle** | Freigabe der/des Vorgesetzten, Kostenstelle, Lagerbestand; bei Ersatz Inventarnummer des Altgeräts (Rücknahme) |
+| **Maus, Tastatur, Webcam** | keine Freigabe nötig – direkt ausgeben |
+| **Software (Freitext)** | Ist die Software bereits freigegeben (Softwarecenter)? Sonst Lizenz- und Sicherheitsprüfung beauftragen |
+| **Telefonie** | Softphone: Lizenz freischalten; Hardphone: Modell, Durchwahl, Standort; Headset ggf. als Zubehör buchen |
+| **Netzlaufwerk / Postfach** | Ressourcenverantwortliche/r als Freigabe? Befristung gesetzt? Minimal nötige Stufe? Bei *Senden als* besonders kritisch prüfen |
+| **VPN-Zugang** | Verwaltetes Gerät, Befristung; Zugänge für Externe und administrative Zugänge nur mit zusätzlicher Freigabe durch ISB/Netzwerkteam |
+| **Neues Benutzerkonto** | Rechte der Referenzperson **vorab sichten**: Sonder- und Altrechte, Admin-Gruppen und Postfächer mit *Senden als* nicht automatisch übernehmen; Abweichungen umsetzen; Befristung bei Praktika |
+| **Virtuelle Maschine** | Ressourcen plausibel? DMZ nur mit Freigabe durch ISB; Backup/Monitoring; Laufzeit erfassen |
+| **SSL/TLS / S/MIME** | Besitz der Domain bzw. Berechtigung für das Postfach; Schlüsseltyp; **niemals private Schlüssel annehmen** – enthält ein Ticket einen Schlüssel, Inhalt vom Admin entfernen lassen und als Sicherheitsvorfall melden |
+
 ::: warning
 Bei **Berechtigungen** immer prüfen: Ist die Freigabeperson tatsächlich ressourcenverantwortlich? Ist eine **Befristung** gesetzt? Entspricht die Berechtigungsstufe dem Minimum (Least Privilege)? Zweifelsfälle an den Second Level bzw. die Ressourcenverantwortlichen eskalieren.
 :::
@@ -155,6 +169,21 @@ Tabelle aller Kategorien mit ID, Name, Beschreibung, Reihenfolge und Aktiv-Statu
 * **ID:** nur Kleinbuchstaben, Ziffern und Bindestrich (2–40 Zeichen); nach Verwendung nicht ändern.
 * **Inaktiv** gesetzte Kategorien verschwinden für Nutzer samt ihrer Einträge; bestehende Tickets bleiben unverändert.
 
+### Ausgelieferter Katalog
+
+| Kategorie | Einträge |
+|---|---|
+| Hardware | Hardware-Bundle, APC, Monitor, Mobiltelefon, Tablet, Maus, Tastatur, Webcam |
+| Software | Software anfordern (Freitext) |
+| Telefonie | Telefon bestellen (Softphone / Hardphone) |
+| Berechtigungen & VPN | Netzlaufwerk-Zugriff, Mail-Postfach-Zugriff, VPN-Zugang |
+| Benutzerkonten | Neues Benutzerkonto (Berechtigungen wie Referenzperson) |
+| Server & VMs | Virtuelle Maschine (CPU, RAM, Speicher, Netz, Backup, Monitoring) |
+| Zertifikate | SSL/TLS-Serverzertifikat, E-Mail-Zertifikat (S/MIME) |
+| Allgemeine IT-Anfrage | Allgemeine Anfrage / Störung |
+
+Der Katalog wird per Datenbankmigration (`backend/migrations/003_catalog_v2.sql`) ausgeliefert und kann anschließend im Admin-Bereich angepasst werden.
+
 ### Katalogeinträge
 
 Über **Neuer Eintrag** oder das Stiftsymbol öffnen Sie den Editor:
@@ -200,7 +229,30 @@ Ein Formular besteht aus einer Liste `fields` (max. 30 Felder):
 | `checkbox` | – | Ja/Nein |
 | `select` | `options` (1–50, `value`: a–z, 0–9, `-`, `_`) | Auswahlliste |
 
-Gemeinsame Attribute: `name` (eindeutig, Buchstabe am Anfang, max. 40 Zeichen), `label`, `required`, `help`.
+Gemeinsame Attribute: `name` (eindeutig, Buchstabe am Anfang, max. 40 Zeichen), `label`, `required`, `help`, `when`.
+
+**Erweiterte Formularlogik:**
+
+| Attribut | Ebene | Wirkung | Beispiel |
+|---|---|---|---|
+| `when: { "field": "...", "equals": ... }` | Feld | Feld wird nur angezeigt und (falls `required`) nur dann Pflicht, wenn das Bezugsfeld den Wert hat; sonst wird sein Wert verworfen | *Hardphone-Modell* nur bei Art = `hardphone` |
+| `requireOneOf: ["feldA", "feldB", …]` | Formular | Mindestens eines der Felder muss ausgefüllt sein (Zahl > 0, Häkchen oder Text) | Stückzahlen im *Hardware-Bundle* |
+| `required: true` bei `checkbox` | Feld | Häkchen muss gesetzt sein (Bestätigung) | „Gleiche Aufgaben wie Referenzperson“ |
+
+```json
+{
+  "requireOneOf": ["pcCount", "monitorCount"],
+  "fields": [
+    { "name": "pcCount", "label": "APC (Anzahl)", "type": "number", "min": 0, "max": 5 },
+    { "name": "monitorCount", "label": "Monitor (Anzahl)", "type": "number", "min": 0, "max": 4 },
+    { "name": "phoneType", "label": "Art", "type": "select", "required": true,
+      "options": [ { "value": "softphone", "label": "Softphone" }, { "value": "hardphone", "label": "Hardphone" } ] },
+    { "name": "hardphoneModel", "label": "Hardphone-Modell", "type": "select", "required": true,
+      "when": { "field": "phoneType", "equals": "hardphone" },
+      "options": [ { "value": "desk", "label": "Standard-Tischtelefon" } ] }
+  ]
+}
+```
 
 ::: info
 **Sicherheit:** Das Backend validiert jede Formulardefinition gegen ein Meta-Schema. Unbekannte Attribute, doppelte Feldnamen, ungültige reguläre Ausdrücke sowie **ReDoS-anfällige Muster** (verschachtelte Quantoren wie `(a+)+`) werden abgelehnt. Eingaben der Nutzer werden serverseitig strikt gegen das Formular geprüft; unbekannte Felder werden verworfen.

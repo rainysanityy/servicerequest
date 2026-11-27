@@ -39,7 +39,7 @@ const statuses = Object.entries(STATUS).map(([code, [label, color_role, is_final
 const MIG = new URL('../../backend/migrations/', import.meta.url);
 const sql = ['002_seed.sql', '003_catalog_v2.sql'].map((f) => readFileSync(new URL(f, MIG), 'utf8')).join('\n');
 const CATS = [
-  ['hardware', 'Hardware', 'PC, Monitor, Mobiltelefon, Tablet, Maus, Tastatur, Webcam – einzeln oder als Bundle', 'laptop'],
+  ['hardware', 'Hardware', 'APC, Monitor, Mobiltelefon, Tablet, Maus, Tastatur, Webcam – einzeln oder als Bundle', 'laptop'],
   ['software', 'Software', 'Beliebige Software per Freitext anfragen', 'apps'],
   ['telephony', 'Telefonie', 'Softphone oder Hardphone (Tischtelefon) bestellen', 'call'],
   ['access', 'Berechtigungen & VPN', 'Netzlaufwerke, Mail-Postfächer, VPN-Zugang', 'key'],
@@ -238,7 +238,12 @@ async function shot(context, path, name, prepare) {
   await page.waitForSelector('main#main', { timeout: 30_000 });
   await page.waitForLoadState('networkidle');
   await page.waitForFunction(() => !document.querySelector('.skeleton'), null, { timeout: 15_000 }).catch(() => {});
-  if (prepare) await prepare(page);
+  if (prepare) {
+    await prepare(page);
+    if (path.startsWith('/anfrage/')) {
+      await page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
+    }
+  }
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${OUT}/${name}.png` });
@@ -268,6 +273,9 @@ try {
     await page.fill('#f-ramGb', '32');
     await page.fill('#f-diskGb', '120');
     await page.fill('#f-dataDiskGb', '500');
+    await page.selectOption('#f-network', 'server-lan');
+    await page.check('#f-backup');
+    await page.check('#f-monitoring');
   });
   await shot(anna, `/anfrage/${PHONE.id}`, '06-formular-telefonie', async (page) => {
     await page.fill('#f-title', 'Tischtelefon für Empfang');

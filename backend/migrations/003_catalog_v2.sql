@@ -11,7 +11,7 @@
 SET search_path = portal;
 
 -- ---------------------------------------------------------------- Kategorien
-UPDATE categories SET description = 'PC, Monitor, Mobiltelefon, Tablet, Maus, Tastatur, Webcam – einzeln oder als Bundle', sort_order = 10, updated_at = now() WHERE id = 'hardware';
+UPDATE categories SET description = 'APC, Monitor, Mobiltelefon, Tablet, Maus, Tastatur, Webcam – einzeln oder als Bundle', sort_order = 10, updated_at = now() WHERE id = 'hardware';
 UPDATE categories SET description = 'Beliebige Software per Freitext anfragen', sort_order = 20, updated_at = now() WHERE id = 'software';
 UPDATE categories SET name = 'Berechtigungen & VPN', description = 'Netzlaufwerke, Mail-Postfächer, VPN-Zugang', sort_order = 30, updated_at = now() WHERE id = 'access';
 UPDATE categories SET sort_order = 90, updated_at = now() WHERE id = 'general';

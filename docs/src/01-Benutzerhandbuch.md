@@ -15,7 +15,7 @@ Dieses Handbuch richtet sich an alle Mitarbeitenden und beschreibt:
 
 * die Anmeldung über das zentrale Unternehmenskonto (Keycloak),
 * den Aufbau der Oberfläche und die Darstellung (heller/dunkler Modus),
-* das Erstellen von Anfragen für **Hardware, Software, Berechtigungen** und **sonstige IT-Anliegen**,
+* das Erstellen von Anfragen für **Hardware (auch als Bundle), Software, Telefonie, Berechtigungen/VPN, Benutzerkonten, virtuelle Maschinen, Zertifikate** und **sonstige IT-Anliegen**,
 * die Verfolgung, Kommentierung und den Abschluss Ihrer Tickets.
 
 ::: tip
@@ -27,6 +27,8 @@ Dieses Handbuch richtet sich an alle Mitarbeitenden und beschreibt:
 | Begriff | Bedeutung |
 |---|---|
 | **Anfrage / Request** | Ihr Anliegen an die IT, z. B. ein neuer Monitor oder ein Laufwerkszugriff. |
+| **APC** | Interne Bezeichnung für den Arbeitsplatz-PC (Desktop, Notebook oder Workstation). |
+| **Bundle** | Bestellung mehrerer Geräte in einer Anfrage. |
 | **Ticket** | Die im Portal angelegte Anfrage mit eindeutiger Nummer im Format `SR-001234`. |
 | **Katalog** | Übersicht aller Leistungen, die Sie über das Portal beantragen können. |
 | **Status** | Bearbeitungsstand eines Tickets (z. B. *Neu*, *In Bearbeitung*, *Gelöst*). |
@@ -75,7 +77,7 @@ Das Portal folgt der Designsprache **Material 3 Expressive**: klare Karten, krä
 Die Startseite zeigt Ihnen auf einen Blick:
 
 * **Hinweisbanner**, wenn Tickets auf Ihre Antwort warten oder eine Lösung bestätigt werden soll,
-* die **Kategorien** Hardware, Software, Berechtigungen und Allgemeine IT-Anfrage,
+* die **Kategorien** Hardware, Software, Telefonie, Berechtigungen & VPN, Benutzerkonten, Server & VMs, Zertifikate und Allgemeine IT-Anfrage,
 * **Meine offenen Tickets** (die fünf zuletzt aktualisierten),
 * **Schnellzugriff** auf häufig genutzte Anfragen,
 * die **Telefonnummer des Service Desks** für dringende Störungen.
@@ -119,52 +121,114 @@ Geben Sie in Formularen und Kommentaren **niemals Passwörter, PINs oder andere 
 
 ## Hardware anfordern
 
-Typische Katalogeinträge: **Notebook anfordern**, **Monitor / Dockingstation**, **Zubehör** (Headset, Maus, Tastatur, Adapter).
+Hardware können Sie **einzeln** oder als **Bundle** (mehrere Geräte in einer Anfrage) bestellen.
+
+| Katalogeintrag | Inhalt | Freigabe |
+|---|---|:-:|
+| **APC** | Arbeitsplatz-PC: Desktop-PC, Notebook, Ultralight-Notebook oder Workstation | ✓ |
+| **Monitor** | 24" Full HD, 27" QHD oder 34" UltraWide, bis zu 4 Stück | ✓ |
+| **Mobiltelefon** | Standard- oder Business-Smartphone, neue (e)SIM oder Rufnummernübernahme | ✓ |
+| **Tablet** | 11" oder 13" mit Stift, WLAN oder WLAN + Mobilfunk | ✓ |
+| **Maus** | kabelgebunden, kabellos oder ergonomisch | – |
+| **Tastatur** | deutsches/englisches Layout, kabelgebunden oder kabellos | – |
+| **Webcam** | Full HD oder 4K mit Autofokus | – |
+| **Hardware-Bundle** | beliebige Kombination der Geräte oben mit Stückzahl | ✓ |
+
+**Hardware-Bundle:** Geben Sie für jedes gewünschte Gerät die **Anzahl** an (Felder mit 0 oder leer werden ignoriert). Mindestens eine Position muss eine Anzahl größer 0 haben. Über *Für Person* können Sie ein Bundle für eine andere Person bestellen, z. B. einen kompletten Arbeitsplatz für neue Kolleginnen und Kollegen. Modellwünsche oder Besonderheiten tragen Sie unter *Besondere Wünsche zu den Geräten* ein.
+
+Gemeinsame Angaben bei freigabepflichtiger Hardware:
 
 | Feld | Hinweis |
 |---|---|
-| Modell / Gerät | Auswahl aus dem Unternehmensstandard. |
-| Anlass | Neue/r Mitarbeitende/r, Ersatz, zusätzliches Gerät. |
-| Inventarnummer Altgerät | Nur bei Ersatz; erleichtert Rücknahme und Inventarisierung. |
 | Kostenstelle | Nur Ziffern (3–10 Stellen). |
-| E-Mail der/des Vorgesetzten | Für die **Freigabe** kostenpflichtiger Hardware. |
+| E-Mail der/des Vorgesetzten | Für die **Freigabe**. |
+| Standort / Raum | Wohin geliefert bzw. wo installiert wird. |
 | Benötigt bis | Gewünschter Termin (Planungshinweis, keine Garantie). |
 | Begründung | Kurze geschäftliche Begründung. |
 
-Nach der Freigabe bereitet die IT das Gerät vor. Sie werden über einen Kommentar im Ticket informiert, sobald es abholbereit ist.
+::: tip
+**Bedingte Felder:** Manche Felder erscheinen erst, wenn sie gebraucht werden. Beispiel *APC*: Wählen Sie als Anlass „Ersatz“, erscheint das Pflichtfeld *Inventarnummer Altgerät*. Beim *Mobiltelefon* erscheint *Bestehende Rufnummer* nur bei Rufnummernübernahme.
+:::
 
-## Software beantragen
+## Software anfordern
 
-Wählen Sie **Software installieren** und geben Sie an:
+Software beantragen Sie über **Software anfordern** als **Freitext**:
 
-* **Software / Produkt** – genaue Bezeichnung und ggf. Version,
-* **Art** – Standardsoftware (bereits freigegeben), Fachsoftware oder neue, noch nicht geprüfte Software,
-* **Lizenztyp** – vorhandene Unternehmenslizenz, neue Named-User-Lizenz, Gerätelizenz oder Open Source,
+* **Gewünschte Software** – Name, Version, Hersteller und gern einen Link zur Produktseite,
 * **Zielgerät** – Hostname oder Inventarnummer (steht auf dem Aufkleber am Gerät),
 * **Geschäftlicher Zweck**.
 
-::: tip
-Viele freigegebene Programme können Sie sofort selbst über das **Softwarecenter** installieren. Der Support antwortet in diesem Fall mit einer entsprechenden Anleitung.
+Die IT prüft Lizenz, Sicherheit und Kompatibilität. Bereits freigegebene Programme können oft sofort über das **Softwarecenter** installiert werden – der Support antwortet dann mit einer Anleitung. Noch nicht geprüfte Software durchläuft vor der Bereitstellung eine Sicherheits- und Lizenzprüfung.
+
+## Telefonie
+
+Über **Telefon bestellen (Softphone / Hardphone)** wählen Sie die Art:
+
+* **Softphone** – Telefonie-Client auf Ihrem Rechner (Lizenz wird freigeschaltet),
+* **Hardphone** – physisches Telefon; danach erscheint das Feld *Hardphone-Modell* (Standard-Tischtelefon, Tischtelefon mit Display/Video, schnurloses DECT-Telefon oder Konferenztelefon).
+
+Außerdem geben Sie an, ob eine **neue Durchwahl** vergeben oder eine **bestehende** verwendet werden soll (dann Pflichtfeld *Bestehende Durchwahl*), ob ein **Headset** mitbestellt wird, den Standort sowie Kostenstelle und Freigabeperson.
+
+## Berechtigungen und VPN
+
+| Katalogeintrag | Wofür | Wichtige Felder |
+|---|---|---|
+| **Netzlaufwerk-Zugriff** | Zugriff auf Netzlaufwerke/Shares | Pfad (z. B. `\\fileserver\vertrieb\angebote`), Stufe *Lesen / Lesen & Schreiben / Besitzer* |
+| **Mail-Postfach-Zugriff** | Funktions-, Gruppen-, Ressourcen- oder Vertretungspostfach | Postfachadresse, Art, Berechtigung *Lesen / Vollzugriff / Senden als / Senden im Auftrag* |
+| **VPN-Zugang** | Fernzugriff auf das Unternehmensnetz | Art (Mitarbeitende, externe Dienstleister, administrativ), verwaltetes Gerät |
+
+Bei allen drei Einträgen sind **Für Person** (Benutzerkennung), **Befristet bis**, **Freigabeperson** und eine **Begründung** Pflicht.
+
+::: info
+**Warum befristet?** Nach dem Prinzip der *minimalen Rechte* sollen Zugriffe nur so lange bestehen, wie sie tatsächlich benötigt werden. Wird ein Zugriff länger gebraucht, stellen Sie rechtzeitig eine Verlängerungsanfrage. VPN-Zugänge sind nur von verwalteten Unternehmensgeräten möglich.
 :::
 
-Neue, noch nicht geprüfte Software durchläuft vor der Bereitstellung eine Sicherheits- und Lizenzprüfung; die Bearbeitung dauert entsprechend länger.
+## Neues Benutzerkonto
 
-## Berechtigungen beantragen
-
-Über **Gruppenmitgliedschaft / Share-Zugriff** beantragen Sie Zugriffe auf Verzeichnisgruppen, Netzlaufwerke oder Applikationsrollen.
+Mit **Neues Benutzerkonto** beantragen Führungskräfte bzw. Teamassistenzen ein Konto für neue Mitarbeitende **mit denselben Berechtigungen wie eine Referenzperson**:
 
 | Feld | Hinweis |
 |---|---|
-| Art des Zugriffs | AD-/Verzeichnisgruppe, Netzlaufwerk/Share, Applikationsrolle. |
-| Gruppe / Pfad / Applikation | z. B. `\\fileserver\vertrieb\angebote` oder Rollenname. |
-| Berechtigungsstufe | Lesen, Lesen & Schreiben, Besitzer/Verwalter. |
-| Für Person | Benutzerkennung der Person, die den Zugriff erhalten soll. |
-| **Befristet bis** | **Pflichtfeld.** Berechtigungen werden grundsätzlich befristet vergeben. |
-| Freigabe durch | E-Mail der/des Ressourcenverantwortlichen. |
-| Begründung | Wofür wird der Zugriff benötigt? |
+| Vorname, Nachname, Eintrittsdatum | Pflicht |
+| Befristet bis | Optional, z. B. bei Praktika |
+| Abteilung, Funktion, Kostenstelle | Organisatorische Zuordnung |
+| **Berechtigungen übernehmen von** | Benutzerkennung der Referenzperson – deren Gruppen, Laufwerke und Postfächer dienen als Vorlage |
+| **Bestätigung** | Pflicht: Die neue Person übernimmt dieselben Aufgaben wie die Referenzperson |
+| Persönliches Postfach anlegen | Optional |
+| Abweichungen | Berechtigungen, die **nicht** übernommen oder **zusätzlich** benötigt werden |
 
-::: info
-**Warum befristet?** Nach dem Prinzip der *minimalen Rechte* sollen Zugriffe nur so lange bestehen, wie sie tatsächlich benötigt werden. Wird ein Zugriff länger gebraucht, stellen Sie rechtzeitig eine Verlängerungsanfrage.
+::: warning
+Wählen Sie als Referenz eine Person mit **gleichen Aufgaben**, nicht einfach ein langjähriges Teammitglied: Über die Jahre angesammelte Sonderrechte würden sonst mitkopiert. Die Hardware für den Arbeitsplatz bestellen Sie separat, am einfachsten als **Hardware-Bundle**.
+:::
+
+## Virtuelle Maschinen
+
+Über **Virtuelle Maschine** fordern IT-nahe Teams Server-Ressourcen mit eigenen Spezifikationen an:
+
+| Feld | Werte |
+|---|---|
+| Gewünschter Hostname | optional; Kleinbuchstaben, Ziffern, Bindestrich |
+| Betriebssystem | RHEL 9, Fedora Server, Ubuntu Server 24.04 LTS, Windows Server 2022/2025 |
+| Umgebung | Produktion, Test/Staging, Entwicklung |
+| vCPU | 1–32 |
+| Arbeitsspeicher | 1–256 GB |
+| Systemplatte | 20–2048 GB |
+| Zusätzliche Datenplatte | 0–16384 GB |
+| Netzsegment | Server-LAN, DMZ, isoliertes Netz |
+| Datensicherung / Monitoring | Ankreuzen, falls gewünscht |
+| Technisch verantwortlich | E-Mail der verantwortlichen Person |
+| Benötigt bis | Laufzeit (VMs ohne Laufzeit werden jährlich überprüft) |
+| Zweck | Beschreibung der Anwendung |
+
+## Zertifikate
+
+| Katalogeintrag | Angaben |
+|---|---|
+| **SSL/TLS-Serverzertifikat** | Hostname (FQDN), weitere DNS-Namen (eine pro Zeile), Aussteller (interne PKI oder öffentlich), Schlüsseltyp (empfohlen ECDSA P-384), Einsatzsystem, technisch verantwortliche Person |
+| **E-Mail-Zertifikat (S/MIME)** | E-Mail-Adresse, persönliches oder Funktionspostfach, Verwendung (Signieren / Verschlüsseln / beides), E-Mail-Programm |
+
+::: warning
+**Private Schlüssel niemals übermitteln** – weder im Ticket noch per E-Mail. Für Serverzertifikate wird der Schlüssel auf dem Zielsystem erzeugt; Sie reichen nur den CSR (Zertifikatsantrag) nach, wenn der Support danach fragt.
 :::
 
 ## Sonstige / Allgemeine IT-Anfragen

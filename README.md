@@ -7,7 +7,7 @@
 ![PostgreSQL 17](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
 ![Fedora Server](https://img.shields.io/badge/Fedora-Server-51A2DA?logo=fedora&logoColor=white)
 
-Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware, Software, Berechtigungen und allgemeine Anfragen** – mit Keycloak-Anmeldung (OIDC + PKCE), rollenbasierter Zugriffskontrolle, einer Oberfläche im **Material 3 Expressive Design** (Dark/Light Mode) und gehärtetem Betrieb mit **rootless Docker auf Fedora Server** nach BSI IT-Grundschutz und NIST SP 800-53.
+Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder als Bundle), Software, Telefonie, Berechtigungen & VPN, Benutzerkonten, virtuelle Maschinen, Zertifikate und allgemeine Anfragen** – mit Keycloak-Anmeldung (OIDC + PKCE), rollenbasierter Zugriffskontrolle, einer Oberfläche im **Material 3 Expressive Design** (Dark/Light Mode) und gehärtetem Betrieb mit **rootless Docker auf Fedora Server** nach BSI IT-Grundschutz und NIST SP 800-53.
 
 > **Projektstatus:** Release 1.0.0. Die [CI-Pipeline](.github/workflows/ci.yml) ist grün: Typecheck, Unit-Tests und Build von Backend und Frontend, Migrationen und Rechteprüfung gegen PostgreSQL 17 sowie der Build aller Container-Images. Noch offen ist ein End-to-End-Test im Browser mit Keycloak-Login (siehe Abnahmeliste im Betriebskonzept).
 
@@ -63,7 +63,19 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware, Software, Be
 
 **Für Mitarbeitende**
 - Startseite mit Kategorien, Schnellzugriff und Hinweisen auf offene Rückfragen
-- Service-Katalog mit Suche und geführten Formularen (Pflichtfelder, Formatprüfung, Befristung von Berechtigungen)
+- Service-Katalog mit Suche und geführten Formularen (Pflichtfelder, Formatprüfung, bedingte Felder, Befristung von Berechtigungen):
+
+  | Kategorie | Katalogeinträge |
+  |---|---|
+  | Hardware | APC, Monitor, Mobiltelefon, Tablet, Maus, Tastatur, Webcam – einzeln oder als **Bundle** mit Stückzahlen |
+  | Software | Software anfordern (Freitext) |
+  | Telefonie | Softphone oder Hardphone (Tisch-, Video-, DECT-, Konferenztelefon) |
+  | Berechtigungen & VPN | Netzlaufwerke, Mail-Postfächer (Lesen, Vollzugriff, Senden als …), VPN-Zugang |
+  | Benutzerkonten | Neues Konto mit Berechtigungen einer Referenzperson |
+  | Server & VMs | Virtuelle Maschine mit OS, vCPU, RAM, Platten, Netzsegment, Backup, Monitoring |
+  | Zertifikate | SSL/TLS-Serverzertifikat, E-Mail-Zertifikat (S/MIME) |
+  | Allgemein | Fragen und Störungen |
+
 - „Meine Tickets“ mit Filter, Suche, Statusverfolgung, Verlauf, Rückfragen beantworten, Lösung bestätigen/erneut öffnen
 - Dark-, Light- und System-Modus, wählbare Farbpaletten, barrierearme Bedienung (Tastatur, ARIA, reduzierte Bewegung)
 
@@ -72,7 +84,7 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware, Software, Be
 - Annehmen/Zuweisen, Priorisieren (SLA-Neuberechnung), Statuswechsel nach Workflow, interne Notizen, Standardlösungen
 
 **Für die Administration**
-- Katalog und Formulare (JSON-Definition mit serverseitiger Validierung inkl. ReDoS-Schutz), Kategorien
+- Katalog und Formulare (JSON-Definition mit bedingten Feldern `when`, Bundle-Regel `requireOneOf`, serverseitiger Validierung inkl. ReDoS-Schutz), Kategorien
 - Status und Workflow-Matrix je Rolle, SLA-Zeiten, Standardlösungen
 - Rollenübersicht mit Rezertifizierungs-Warnungen, Audit-Log mit Filter und Integritätsprüfung (Hash-Kette), Systemsicht
 

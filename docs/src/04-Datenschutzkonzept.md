@@ -44,7 +44,7 @@ Dieses Konzept ist eine fachlich-technische Vorlage. Die abschließende rechtlic
 
 | Nr. | Zweck |
 |---|---|
-| Z1 | Entgegennahme, Bearbeitung und Dokumentation von IT-Anfragen (Hardware, Software, Berechtigungen, Störungen) |
+| Z1 | Entgegennahme, Bearbeitung und Dokumentation von IT-Anfragen (Hardware, Software, Telefonie, Berechtigungen/VPN, Benutzerkonten, virtuelle Maschinen, Zertifikate, Störungen) |
 | Z2 | Kommunikation zwischen anfragender Person und IT-Support zum jeweiligen Ticket |
 | Z3 | Nachvollziehbarkeit von Freigaben und Berechtigungsvergaben (Revisionssicherheit, IT-Compliance) |
 | Z4 | Gewährleistung der Informationssicherheit (Authentisierung, Zugriffskontrolle, Protokollierung, Missbrauchserkennung) |
@@ -54,7 +54,8 @@ Dieses Konzept ist eine fachlich-technische Vorlage. Die abschließende rechtlic
 
 * Beschäftigte, die Anfragen stellen (inkl. Auszubildende, Leiharbeitnehmende mit Unternehmenskonto),
 * Beschäftigte des IT-Supports und der Portal-Administration,
-* in Formularen benannte Dritte: Vorgesetzte bzw. Freigabepersonen (E-Mail), Personen, für die Berechtigungen beantragt werden (Benutzerkennung).
+* in Formularen benannte Dritte: Vorgesetzte bzw. Freigabepersonen (E-Mail), Personen, für die Berechtigungen oder Geräte beantragt werden (Benutzerkennung), Referenzpersonen bei neuen Benutzerkonten,
+* künftige Beschäftigte, für die vor dem Eintritt ein Benutzerkonto beantragt wird (Name, Eintrittsdatum, Abteilung).
 
 ## Datenkategorien
 
@@ -62,8 +63,9 @@ Dieses Konzept ist eine fachlich-technische Vorlage. Die abschließende rechtlic
 |---|---|---|---|
 | Identitätsdaten | Keycloak-Subjekt-ID (`sub`), Benutzername, Anzeigename, E-Mail, Portal-Rollen, erster/letzter Zugriff | ID-Token/Access-Token (Keycloak) | Z1, Z2, Z4 |
 | Ticketdaten | Ticketnummer, Kategorie, Katalogeintrag, Titel, Beschreibung, Status, Priorität, Zuweisung, Zeitstempel, SLA-Fristen | Eingabe der Person / Support | Z1, Z5 |
-| Formulardaten | z. B. Gerätemodell, Kostenstelle, Standort/Raum, Hostname, Inventarnummer, Begründung, gewünschter Termin, Rückrufnummer | Eingabe der Person | Z1, Z3 |
-| Daten Dritter | E-Mail der Freigabeperson, Benutzerkennung der berechtigten Person | Eingabe der Person | Z1, Z3 |
+| Formulardaten | z. B. Gerätetyp und Stückzahl, Kostenstelle, Standort/Raum, Hostname, Inventarnummer, Rufnummer/Durchwahl, Postfachadresse, VM-Spezifikation, Zertifikatsdaten (FQDN, E-Mail-Adresse), Begründung, gewünschter Termin | Eingabe der Person | Z1, Z3 |
+| Daten neuer Beschäftigter | Vor- und Nachname, Eintrittsdatum, ggf. Befristung, Abteilung, Funktion, Kostenstelle, Benutzerkennung der Referenzperson | Eingabe der Führungskraft/Assistenz | Z1, Z3 |
+| Daten Dritter | E-Mail der Freigabeperson bzw. technisch verantwortlichen Person, Benutzerkennung der berechtigten Person bzw. Referenzperson | Eingabe der Person | Z1, Z3 |
 | Kommunikationsdaten | Kommentare, interne Notizen, Verlaufsereignisse | Person / Support | Z2, Z3 |
 | Audit-Daten | Akteur (ID, Name, Rollen), Aktion, Objekt, Ergebnis, Zeitpunkt, Request-ID, IP-Adresse | System | Z3, Z4 |
 | Technische Protokolle | IP-Adresse, Zeit, Pfad (ohne Parameter), Statuscode, User-Agent | Reverse Proxy, Backend | Z4 |
@@ -123,6 +125,7 @@ Das Portal ist objektiv geeignet, Verhalten oder Leistung von Beschäftigten zu 
 | Eingabehinweise | „Bitte keine Passwörter oder sonstigen Zugangsdaten angeben“ in Formularen |
 | Kein Tracking | Keine externen Dienste, keine Analyse-Cookies, keine Fremdschriften |
 | Log-Minimierung | Proxy protokolliert Pfade ohne Query-Parameter; Tokens/Cookies werden nie geloggt; IP-Adressen im Audit-Log werden nach 90 Tagen entfernt |
+| Minimale Angaben für neue Konten | Für Kontoanträge werden nur Name, Eintritt, Organisation und Referenzperson erfasst – keine Privatanschrift, Geburtsdaten o. Ä. |
 | Anonymisierung statt Löschung | Abgeschlossene Tickets verlieren nach Fristablauf alle Inhalte und Personenbezüge; aggregierte Statistik bleibt möglich |
 | Befristete Berechtigungen | Formular erzwingt Ablaufdatum für Zugriffsrechte |
 
