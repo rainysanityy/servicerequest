@@ -100,8 +100,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Keycloak mit Realm-Import starten
         run: |
+          # Test ohne TLS: Kopie des Realms mit sslRequired=external (Produktion: "all" hinter dem TLS-Proxy)
+          mkdir -p /tmp/kcimport && chmod 755 /tmp/kcimport
+          jq '.sslRequired = "external"' keycloak/import/itportal-realm.json > /tmp/kcimport/itportal-realm.json
+          chmod 644 /tmp/kcimport/itportal-realm.json
           docker run -d --name kc -p 8080:8080 \
-            -v "$PWD/keycloak/import:/opt/keycloak/data/import:ro" \
+            -v "/tmp/kcimport:/opt/keycloak/data/import:ro" \
             -e KC_HTTP_RELATIVE_PATH=/auth -e KC_HEALTH_ENABLED=true \
             -e KC_BOOTSTRAP_ADMIN_USERNAME=bootstrap -e KC_BOOTSTRAP_ADMIN_PASSWORD=bootstrap \
             -e PORTAL_HOSTNAME=localhost -e KEYCLOAK_ADMIN_API_SECRET="$SECRET" \
