@@ -366,4 +366,5 @@ pre.json { margin: 0; white-space: pre-wrap; font-family: var(--md-ref-typeface-
 .quick-help { margin-top: 16px; }
 .content > .banner { margin-bottom: 16px; }
 
-.toolbar .input { width: auto; flex: 1 1 200px; min-height: 40px; padding: 8px 16px; border-radius: var(--md-sys-shape-corner-full); }
+.toolbar > .input { width: auto; flex: 1 1 200px; min-height: 40px; padding: 8px 16px; border-radius: var(--md-sys-shape-corner-full); }
+.card .row.between { flex-wrap: nowrap; }
