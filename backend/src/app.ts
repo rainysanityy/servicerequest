@@ -31,8 +31,8 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
         req: (req) => ({ method: req.method, url: req.url.split('?')[0], reqId: req.id }),
       },
     },
-    // Genau ein vertrauenswürdiger Hop: der Reverse Proxy
-    trustProxy: 1,
+    // Genau ein vertrauenswürdiger Hop: der Reverse Proxy (überschreibt X-Forwarded-For)
+    trustProxy: (_address: string, hop: number) => hop === 0,
     bodyLimit: 64 * 1024,
     maxParamLength: 100,
     disableRequestLogging: false,
@@ -114,7 +114,7 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
     }
     const status = (err as { statusCode?: number }).statusCode;
     if (status && status >= 400 && status < 500) {
-      reply.code(status).send({ error: 'bad_request', message: status === 429 ? err.message : 'Ungültige Anfrage' });
+      reply.code(status).send({ error: 'bad_request', message: status === 429 ? (err as Error).message : 'Ungültige Anfrage' });
       return;
     }
     req.log.error({ err }, 'unhandled error');

@@ -72,7 +72,7 @@ function fieldValidator(f: FieldDef): z.ZodTypeAny {
   let v: z.ZodTypeAny;
   switch (f.type) {
     case 'text': {
-      let s = z.string().max(1000).transform(cleanLine).pipe(z.string().max(f.maxLength ?? 200));
+      let s: z.ZodTypeAny = z.string().max(1000).transform(cleanLine).pipe(z.string().max(f.maxLength ?? 200));
       if (f.pattern) {
         const re = new RegExp(f.pattern, 'u');
         s = s.pipe(z.string().refine((x) => x === '' || re.test(x), `${f.label}: ungültiges Format`));

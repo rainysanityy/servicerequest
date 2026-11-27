@@ -18,7 +18,6 @@ x-hardening: &hardening
     - no-new-privileges:true
   cap_drop:
     - ALL
-  pids_limit: 256
   logging:
     driver: json-file
     options:
@@ -66,7 +65,7 @@ services:
       start_period: 10s
     deploy:
       resources:
-        limits: { cpus: "1.0", memory: 256M }
+        limits: { cpus: "1.0", memory: 256M, pids: 256 }
 
   # ---------------------------------------------------------------------------
   # Frontend (statische SPA, nginx-unprivileged)
@@ -88,7 +87,7 @@ services:
       retries: 3
     deploy:
       resources:
-        limits: { cpus: "0.5", memory: 128M }
+        limits: { cpus: "0.5", memory: 128M, pids: 256 }
 
   # ---------------------------------------------------------------------------
   # Backend-API (Node.js / Fastify, distroless, non-root)
@@ -138,7 +137,7 @@ services:
       start_period: 20s
     deploy:
       resources:
-        limits: { cpus: "1.0", memory: 512M }
+        limits: { cpus: "1.0", memory: 512M, pids: 256 }
 
   # ---------------------------------------------------------------------------
   # Einmaliger Migrations-Job (Schema-Owner, getrennt von der App-Rolle)
@@ -208,7 +207,7 @@ services:
       retries: 10
     deploy:
       resources:
-        limits: { cpus: "1.0", memory: 1G }
+        limits: { cpus: "1.0", memory: 1G, pids: 256 }
 
   # ---------------------------------------------------------------------------
   # Keycloak (Identity Provider, OIDC)
@@ -256,7 +255,7 @@ services:
       start_period: 90s
     deploy:
       resources:
-        limits: { cpus: "2.0", memory: 1536M }
+        limits: { cpus: "2.0", memory: 1536M, pids: 256 }
 
   keycloak-db:
     <<: *hardening
@@ -281,7 +280,7 @@ services:
       retries: 10
     deploy:
       resources:
-        limits: { cpus: "1.0", memory: 512M }
+        limits: { cpus: "1.0", memory: 512M, pids: 256 }
 
 networks:
   edge:
