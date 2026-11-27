@@ -48,7 +48,7 @@ export default function Home() {
           <div>
             {Number(summary.data.waiting_for_me) > 0 ? <div><strong>{summary.data.waiting_for_me}</strong> Ticket(s) warten auf Ihre Antwort.</div> : null}
             {Number(summary.data.to_confirm) > 0 ? <div><strong>{summary.data.to_confirm}</strong> gelöste(s) Ticket(s) bitte bestätigen.</div> : null}
-            <Link to="/tickets?state=open">Jetzt ansehen</Link>
+            <Link to="/tickets?filter=open">Jetzt ansehen</Link>
           </div>
         </div>
       ) : null}

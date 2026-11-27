@@ -9,7 +9,7 @@ type State = 'open' | 'closed' | 'all';
 
 export default function MyTickets() {
   const [params, setParams] = useSearchParams();
-  const state = (['open', 'closed', 'all'].includes(params.get('state') ?? '') ? params.get('state') : 'open') as State;
+  const state = (['open', 'closed', 'all'].includes(params.get('filter') ?? '') ? params.get('filter') : 'open') as State;
   const page = Math.max(1, Number(params.get('page') ?? 1) || 1);
   const [q, setQ] = useState(params.get('q') ?? '');
   const [debounced, setDebounced] = useState(q);
@@ -42,7 +42,7 @@ export default function MyTickets() {
         <Link to="/katalog" className="btn filled"><Icon name="add" /> Neue Anfrage</Link>
       </div>
       <div className="toolbar">
-        <Segmented<State> label="Ticketstatus filtern" value={state} onChange={(v) => update({ state: v, page: null })}
+        <Segmented<State> label="Ticketstatus filtern" value={state} onChange={(v) => update({ filter: v, page: null })}
           options={[{ value: 'open', label: 'Offen' }, { value: 'closed', label: 'Abgeschlossen' }, { value: 'all', label: 'Alle' }]} />
         <div className="search">
           <Icon name="search" />

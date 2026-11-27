@@ -249,7 +249,7 @@ try {
     await page.fill('#f-approverEmail', 'k.vogel@example.com');
     await page.click('button[type=submit]');
   });
-  await shot(annaLight, '/tickets?state=all', '05-meine-tickets');
+  await shot(annaLight, '/tickets?filter=all', '05-meine-tickets');
   await shot(annaLight, `/tickets/${SR_DETAIL.id}`, '06-ticket-detail');
   await annaLight.close();
 
