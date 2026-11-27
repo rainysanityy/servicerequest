@@ -27,6 +27,11 @@ const EnvSchema = z.object({
   RETENTION_AUDIT_DAYS: z.coerce.number().int().min(30).default(365),
   RETENTION_IP_DAYS: z.coerce.number().int().min(7).default(90),
   MIGRATIONS_DIR: z.string().default('/app/migrations'),
+  // Keycloak-Admin-API (Benutzer & Rollen). Ohne Secret ist die Funktion deaktiviert.
+  KEYCLOAK_INTERNAL_URL: z.string().url().default('http://keycloak:8080/auth'),
+  KEYCLOAK_REALM: z.string().regex(/^[a-z0-9-]{1,64}$/).default('itportal'),
+  KEYCLOAK_ADMIN_CLIENT_ID: z.string().min(1).default('portal-admin-api'),
+  KEYCLOAK_ADMIN_CLIENT_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

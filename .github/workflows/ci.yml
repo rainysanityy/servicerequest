@@ -90,6 +90,66 @@ jobs:
           if psql -c "DELETE FROM audit_log" 2>/dev/null; then echo "audit_log darf nicht löschbar sein"; exit 1; fi
           if psql -c "DROP TABLE tickets" 2>/dev/null; then echo "App-Rolle darf kein DDL"; exit 1; fi
 
+  keycloak:
+    name: Keycloak – Realm-Import, Registrierung, Admin-API
+    runs-on: ubuntu-latest
+    env:
+      KC: http://localhost:8080/auth
+      SECRET: ci-secret-0123456789abcdefABCDEF
+    steps:
+      - uses: actions/checkout@v4
+      - name: Keycloak mit Realm-Import starten
+        run: |
+          docker run -d --name kc -p 8080:8080 \
+            -v "$PWD/keycloak/import:/opt/keycloak/data/import:ro" \
+            -e KC_HTTP_RELATIVE_PATH=/auth -e KC_HEALTH_ENABLED=true \
+            -e KC_BOOTSTRAP_ADMIN_USERNAME=bootstrap -e KC_BOOTSTRAP_ADMIN_PASSWORD=bootstrap \
+            -e PORTAL_HOSTNAME=localhost -e KEYCLOAK_ADMIN_API_SECRET="$SECRET" \
+            -e 'REGISTRATION_EMAIL_REGEX=^[^@ ]+@example[.]com$' \
+            quay.io/keycloak/keycloak:26.4 start-dev --import-realm
+          for i in $(seq 1 90); do
+            curl -sf "$KC/realms/itportal/.well-known/openid-configuration" >/dev/null && break; sleep 2
+          done
+          curl -sf "$KC/realms/itportal/.well-known/openid-configuration" >/dev/null || { docker logs kc | tail -80; exit 1; }
+      - name: Registrierungsseite erreichbar
+        run: |
+          code=$(curl -s -o page.html -w '%{http_code}' "$KC/realms/itportal/protocol/openid-connect/registrations?client_id=portal-frontend&response_type=code&scope=openid&redirect_uri=https%3A%2F%2Flocalhost%2F")
+          test "$code" = 200 && grep -qi 'register' page.html
+      - name: Admin-API über Service-Account (wie das Backend)
+        run: |
+          set -e
+          TOKEN=$(curl -sf -d grant_type=client_credentials -d client_id=portal-admin-api -d "client_secret=$SECRET" \
+            "$KC/realms/itportal/protocol/openid-connect/token" | jq -r .access_token)
+          H="Authorization: Bearer $TOKEN"; A="$KC/admin/realms/itportal"
+          curl -sf -H "$H" "$A/users?max=5&briefRepresentation=true" >/dev/null
+          curl -sf -H "$H" "$A/users/count" >/dev/null
+          UHD=$(curl -sf -H "$H" "$A/group-by-path/IT-UHD" | jq -r .id)
+          # Domain-Beschränkung greift (falsche Domain -> abgelehnt)
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "$H" -H 'Content-Type: application/json' -X POST "$A/users" \
+            -d '{"username":"evil.test","email":"x@evil.org","firstName":"E","lastName":"V","enabled":true}')
+          test "$code" = 400
+          # Benutzer anlegen, Standardgruppe prüfen, Rolle UHD vergeben/entziehen, sperren
+          curl -sf -H "$H" -H 'Content-Type: application/json' -X POST "$A/users" \
+            -d '{"username":"ci.user","email":"ci.user@example.com","firstName":"CI","lastName":"User","enabled":true}'
+          ID=$(curl -sf -H "$H" "$A/users?username=ci.user&exact=true" | jq -r '.[0].id')
+          curl -sf -H "$H" "$A/users/$ID/groups" | jq -e 'map(.path) | index("/Mitarbeitende")' >/dev/null
+          curl -sf -H "$H" -X PUT "$A/users/$ID/groups/$UHD"
+          curl -sf -H "$H" "$A/groups/$UHD/members?briefRepresentation=true" | jq -e --arg id "$ID" 'map(.id) | index($id)' >/dev/null
+          curl -sf -H "$H" -X DELETE "$A/users/$ID/groups/$UHD"
+          curl -sf -H "$H" -H 'Content-Type: application/json' -X PUT "$A/users/$ID" -d '{"enabled":false}'
+          curl -sf -H "$H" "$A/users/$ID" | jq -e '.enabled == false' >/dev/null
+          curl -sf -H "$H" -X POST "$A/users/$ID/logout"
+          echo "Admin-API-Prüfungen erfolgreich"
+      - name: Service-Account darf nicht in den Master-Realm
+        run: |
+          TOKEN=$(curl -sf -d grant_type=client_credentials -d client_id=portal-admin-api -d "client_secret=$SECRET" \
+            "$KC/realms/itportal/protocol/openid-connect/token" | jq -r .access_token)
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$KC/admin/realms/master/users")
+          test "$code" = 401 -o "$code" = 403
+      - name: Logs bei Fehler
+        if: failure()
+        run: docker logs kc | tail -120
+
   config:
     name: Konfiguration & Skripte
     runs-on: ubuntu-latest

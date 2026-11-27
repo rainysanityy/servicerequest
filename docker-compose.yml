@@ -107,6 +107,10 @@ services:
       OIDC_JWKS_URL: http://keycloak:8080/auth/realms/${KEYCLOAK_REALM:-itportal}/protocol/openid-connect/certs
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-portal-api}
       OIDC_ALLOWED_AZP: ${OIDC_ALLOWED_AZP:-portal-frontend}
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080/auth
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-itportal}
+      KEYCLOAK_ADMIN_CLIENT_ID: portal-admin-api
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_API_SECRET:?KEYCLOAK_ADMIN_API_SECRET fehlt}
       DB_HOST: db
       DB_PORT: "5432"
       DB_NAME: ${PORTAL_DB_NAME:-portal}
@@ -230,8 +234,13 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
       KC_LOG_LEVEL: INFO
-      # Platzhalter für den Realm-Import (Redirect-URIs / Web-Origins)
+      # Platzhalter für den Realm-Import (Redirect-URIs, Admin-API-Client, Registrierung, SMTP)
       PORTAL_HOSTNAME: ${PORTAL_HOSTNAME}
+      KEYCLOAK_ADMIN_API_SECRET: ${KEYCLOAK_ADMIN_API_SECRET:?KEYCLOAK_ADMIN_API_SECRET fehlt - scripts/init-secrets.sh ausführen}
+      REGISTRATION_EMAIL_REGEX: ${REGISTRATION_EMAIL_REGEX:-^[^@ ]+@[^@ ]+$$}
+      SMTP_HOST: ${SMTP_HOST:-mail.example.local}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_FROM: ${SMTP_FROM:-it-portal@example.local}
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-kc-bootstrap}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       JAVA_OPTS_KC_HEAP: "-XX:MaxRAMPercentage=70"

@@ -139,3 +139,31 @@ describe('Bereinigung', () => {
     expect(JSON.stringify(sanitizeForLog(deep))).toContain('[…]');
   });
 });
+
+describe('Keycloak-Admin-Client', () => {
+  it('leitet die Portal-Rolle aus Gruppen ab (höchste gewinnt)', async () => {
+    const { roleFromGroups } = await import('../src/keycloakAdmin.js');
+    expect(roleFromGroups('a', new Set(['a']), new Set(['a']))).toBe('admin');
+    expect(roleFromGroups('b', new Set(), new Set(['b']))).toBe('first-level');
+    expect(roleFromGroups('c', new Set(), new Set())).toBe('user');
+  });
+
+  it('nutzt Client-Credentials, kodiert Pfade und blendet Service-Accounts aus', async () => {
+    const { KeycloakAdmin } = await import('../src/keycloakAdmin.js');
+    const calls: string[] = [];
+    const fake = (async (url: string | URL, init?: RequestInit) => {
+      const u = String(url);
+      calls.push(`${init?.method ?? 'GET'} ${u}`);
+      if (u.endsWith('/token')) return new Response(JSON.stringify({ access_token: 't', expires_in: 120 }), { status: 200 });
+      if (u.includes('/users/count')) return new Response('2', { status: 200 });
+      if (u.includes('/users?')) return new Response(JSON.stringify([
+        { id: '1', username: 'anna', enabled: true }, { id: '2', username: 'service-account-portal-admin-api', enabled: true }]), { status: 200 });
+      return new Response(null, { status: 204 });
+    }) as typeof fetch;
+    const kc = new KeycloakAdmin({ baseUrl: 'http://kc/auth', realm: 'itportal', clientId: 'c', clientSecret: 's', fetchImpl: fake });
+    const r = await kc.searchUsers('an na', 0, 20);
+    expect(r.users.map((u) => u.username)).toEqual(['anna']);
+    expect(calls[0]).toBe('POST http://kc/auth/realms/itportal/protocol/openid-connect/token');
+    expect(calls.some((c) => c.includes('search=an+na'))).toBe(true);
+  });
+});

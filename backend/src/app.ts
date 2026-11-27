@@ -10,6 +10,8 @@ import { catalogRoutes } from './routes/catalog.js';
 import { ticketRoutes } from './routes/tickets.js';
 import { supportRoutes } from './routes/support.js';
 import { adminRoutes } from './routes/admin.js';
+import { userRoutes } from './routes/users.js';
+import type { KeycloakAdmin } from './keycloakAdmin.js';
 
 export interface BuildOptions {
   pool: pg.Pool;
@@ -17,6 +19,7 @@ export interface BuildOptions {
   publicOrigin: string;
   logLevel?: string;
   rateLimitMax?: number;
+  kc?: KeycloakAdmin | null;
 }
 
 const REQUEST_ID = /^[A-Za-z0-9-]{8,64}$/;
@@ -97,6 +100,7 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
   await app.register(ticketRoutes, { pool: opts.pool });
   await app.register(supportRoutes, { pool: opts.pool });
   await app.register(adminRoutes, { pool: opts.pool });
+  await app.register(userRoutes, { pool: opts.pool, kc: opts.kc ?? null });
 
   // --- Einheitliche Fehlerbehandlung, keine internen Details nach außen ----
   app.setErrorHandler((err, req, reply) => {

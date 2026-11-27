@@ -5,6 +5,7 @@ import type { ColorRole, FormSchema, Paged, Priority, Solution } from '../api/ty
 import { Icon } from '../components/Icon';
 import { Dialog, EmptyState, ErrorBanner, ListSkeleton, Pagination, StatusChip, useApi, useSnackbar } from '../components/ui';
 import { fmtDateTime, PRIORITY_LABEL, ROLE_LABEL } from '../util/format';
+import { useAuth } from '../auth/AuthProvider';
 
 /* =============================================================== Hilfen */
 function useSaver() {
@@ -356,37 +357,149 @@ function SolutionsAdmin() {
   );
 }
 
-/* =============================================================== Rollen */
+/* =============================================================== Benutzer & Rollen */
 interface RolesInfo {
   expectedRoles: { role: string; keycloakGroup: string; description: string }[];
   counts: Record<string, number>;
   warnings: string[];
-  users: { sub: string; username: string; display_name: string; roles: string[]; last_seen: string }[];
 }
-function RolesAdmin() {
-  const { data, error, loading } = useApi(() => api.get<RolesInfo>('/api/admin/roles'), []);
-  if (loading) return <ListSkeleton />;
-  if (error || !data) return <ErrorBanner error={error} />;
+type PortalRole = 'user' | 'first-level' | 'admin';
+interface KcUserRow {
+  id: string; username: string; name: string; email: string | null; emailVerified: boolean;
+  enabled: boolean; createdAt: string | null; role: PortalRole;
+}
+const ROLE_OPTIONS: { value: PortalRole; label: string; icon: string }[] = [
+  { value: 'user', label: 'Mitarbeitende', icon: 'person' },
+  { value: 'first-level', label: 'UHD', icon: 'support' },
+  { value: 'admin', label: 'Admin', icon: 'admin' },
+];
+const ROLE_TONE: Record<PortalRole, string> = { user: 'tone-neutral', 'first-level': 'tone-tertiary', admin: 'tone-primary' };
+
+function UsersAdmin() {
+  const { me } = useAuth();
+  const status = useApi(() => api.get<{ enabled: boolean }>('/api/admin/users/status'), []);
+  const info = useApi(() => api.get<RolesInfo>('/api/admin/roles'), []);
+  const [q, setQ] = useState('');
+  const [applied, setApplied] = useState('');
+  const [page, setPage] = useState(1);
+  const enabled = status.data?.enabled === true;
+  const list = useApi(
+    () => (enabled ? api.get<Paged<KcUserRow> & { counts: Record<string, number> }>('/api/admin/users', { q: applied, page, pageSize: 20 }) : Promise.resolve(null)),
+    [applied, page, enabled],
+  );
+  const [pending, setPending] = useState<{ user: KcUserRow; role?: PortalRole; enable?: boolean } | null>(null);
+  const [reason, setReason] = useState('');
+  const s = useSaver();
+
+  useEffect(() => {
+    const t = window.setTimeout(() => { setPage(1); setApplied(q.trim()); }, 350);
+    return () => window.clearTimeout(t);
+  }, [q]);
+
+  const confirm = () => {
+    if (!pending) return;
+    const p = pending;
+    void s.save(
+      () => (p.role
+        ? api.put(`/api/admin/users/${p.user.id}/role`, { role: p.role, reason })
+        : api.put(`/api/admin/users/${p.user.id}/enabled`, { enabled: !!p.enable, reason })),
+      p.role ? `Rolle von ${p.user.name} geändert` : p.enable ? `${p.user.name} entsperrt` : `${p.user.name} gesperrt`,
+      () => { setPending(null); setReason(''); list.reload(); info.reload(); },
+    );
+  };
+
   return (
     <div className="stack">
-      {data.warnings.map((w) => <div key={w} className="banner tone-warning" role="status"><Icon name="warning" />{w}</div>)}
-      <div className="grid cols-3">{data.expectedRoles.map((r) => (
-        <div key={r.role} className="card stack">
-          <span className="row between"><span className="title-l">{ROLE_LABEL[r.role]}</span><span className="chip tone-primary">{data.counts[r.role] ?? 0}</span></span>
-          <span className="mono">Realm-Rolle: {r.role}</span>
-          <span className="mono">Keycloak-Gruppe: {r.keycloakGroup}</span>
-          <span className="body-m muted">{r.description}</span>
+      {info.data?.warnings.map((w) => <div key={w} className="banner tone-warning" role="status"><Icon name="warning" />{w}</div>)}
+      <div className="grid cols-3">
+        {ROLE_OPTIONS.map((r) => (
+          <div key={r.value} className="card stack">
+            <span className="row between">
+              <span className="title-l row"><span className={`avatar ${ROLE_TONE[r.value]}`}><Icon name={r.icon} size={20} /></span>{ROLE_LABEL[r.value]}</span>
+              {r.value !== 'user' && list.data ? <span className="chip tone-primary">{list.data.counts[r.value] ?? 0}</span> : null}
+            </span>
+            <span className="mono body-s">Keycloak-Gruppe: {info.data?.expectedRoles.find((e) => e.role === r.value)?.keycloakGroup}</span>
+            <span className="body-m muted">{info.data?.expectedRoles.find((e) => e.role === r.value)?.description}</span>
+          </div>
+        ))}
+      </div>
+
+      {status.data && !enabled ? (
+        <div className="banner tone-neutral" role="status"><Icon name="info" />
+          Die Benutzerverwaltung ist nicht aktiv. Setzen Sie <span className="mono">KEYCLOAK_ADMIN_API_SECRET</span> (siehe Betriebskonzept), dann können Rollen hier vergeben werden.
         </div>
-      ))}</div>
-      <p className="body-m muted">Rollen werden ausschließlich in Keycloak vergeben (Gruppen → Realm-Rollen). Diese Ansicht zeigt die zuletzt im Token gesehenen Rollen zur Rezertifizierung.</p>
-      <div className="table-wrap"><table className="data">
-        <thead><tr><th>Name</th><th>Benutzername</th><th>Rollen</th><th>Zuletzt aktiv</th></tr></thead>
-        <tbody>{data.users.map((u) => (
-          <tr key={u.sub}><td>{u.display_name}</td><td className="mono">{u.username}</td>
-            <td><span className="row">{u.roles.map((r) => <span key={r} className="chip tone-secondary">{ROLE_LABEL[r] ?? r}</span>)}</span></td>
-            <td>{fmtDateTime(u.last_seen)}</td></tr>
-        ))}</tbody>
-      </table></div>
+      ) : null}
+
+      {enabled ? (
+        <>
+          <div className="toolbar">
+            <div className="search">
+              <Icon name="search" />
+              <label htmlFor="u-search" className="sr-only">Benutzer suchen</label>
+              <input id="u-search" className="input" type="search" placeholder="Name, Benutzername oder E-Mail" value={q} maxLength={100} onChange={(e) => setQ(e.target.value)} />
+            </div>
+            <button className="icon-btn" aria-label="Aktualisieren" onClick={list.reload}><Icon name="refresh" /></button>
+          </div>
+          <ErrorBanner error={list.error ?? s.error} />
+          {list.loading ? <ListSkeleton /> : list.data && list.data.items.length > 0 ? (
+            <>
+              <div className="table-wrap"><table className="data">
+                <thead><tr><th>Person</th><th>Benutzername</th><th>Status</th><th>Rolle im Portal</th><th /></tr></thead>
+                <tbody>{list.data.items.map((u) => (
+                  <tr key={u.id}>
+                    <td><strong>{u.name}</strong>{u.id === me.sub ? <span className="chip tone-secondary chip-inline">Sie</span> : null}<br />
+                      <span className="body-s muted">{u.email ?? '–'}{u.email && !u.emailVerified ? ' · E-Mail nicht bestätigt' : ''}</span></td>
+                    <td className="mono">{u.username}</td>
+                    <td>{u.enabled ? <span className="chip tone-success">aktiv</span> : <span className="chip tone-error">gesperrt</span>}</td>
+                    <td>
+                      <div className="segmented segmented-sm" role="group" aria-label={`Rolle für ${u.name}`}>
+                        {ROLE_OPTIONS.map((r) => (
+                          <button key={r.value} type="button" aria-pressed={u.role === r.value} disabled={s.busy}
+                            onClick={() => { if (u.role !== r.value) { setReason(''); setPending({ user: u, role: r.value }); } }}>
+                            {u.role === r.value ? <Icon name="check" size={16} /> : null}{r.label}
+                          </button>
+                        ))}
+                      </div>
+                    </td>
+                    <td>
+                      <button className={`btn small ${u.enabled ? 'outlined' : 'tonal'}`} disabled={s.busy || u.id === me.sub}
+                        onClick={() => { setReason(''); setPending({ user: u, enable: !u.enabled }); }}>
+                        <Icon name={u.enabled ? 'lock' : 'check'} size={16} />{u.enabled ? 'Sperren' : 'Entsperren'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}</tbody>
+              </table></div>
+              <Pagination page={list.data.page} pageSize={list.data.pageSize} total={list.data.total} onPage={setPage} />
+            </>
+          ) : <EmptyState icon="group" title="Keine Benutzer gefunden" />}
+        </>
+      ) : null}
+
+      <Dialog open={!!pending} title={pending?.role ? 'Rolle ändern' : pending?.enable ? 'Konto entsperren' : 'Konto sperren'} onClose={() => setPending(null)}
+        actions={<>
+          <button className="btn text" onClick={() => setPending(null)}>Abbrechen</button>
+          <button className={`btn ${pending?.enable === false || pending?.role === 'user' ? 'danger' : 'filled'}`} disabled={s.busy} onClick={confirm}>Bestätigen</button>
+        </>}>
+        {pending ? (
+          <>
+            <ErrorBanner error={s.error} />
+            <p>
+              {pending.role
+                ? <><strong>{pending.user.name}</strong>: {ROLE_LABEL[pending.user.role]} → <strong>{ROLE_LABEL[pending.role]}</strong></>
+                : <><strong>{pending.user.name}</strong> wird {pending.enable ? 'entsperrt' : 'gesperrt'}.</>}
+            </p>
+            {(pending.role && ROLE_OPTIONS.findIndex((r) => r.value === pending.role) < ROLE_OPTIONS.findIndex((r) => r.value === pending.user.role)) || pending.enable === false
+              ? <p className="body-m muted">Bestehende Sitzungen der Person werden sofort beendet.</p>
+              : <p className="body-m muted">Die neue Rolle wird bei der nächsten Anmeldung bzw. spätestens nach 5 Minuten wirksam.</p>}
+            {pending.role === 'admin' ? <div className="banner tone-warning"><Icon name="warning" />Administratoren haben Zugriff auf Audit-Log, Katalog, Workflow und Benutzerverwaltung. Zwei-Faktor-Authentisierung ist Pflicht.</div> : null}
+            <div className="field">
+              <label htmlFor="r-reason">Begründung / Ticketnummer (wird im Audit-Log gespeichert)</label>
+              <input id="r-reason" className="input" maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="z. B. SR-001234, Wechsel ins UHD-Team" />
+            </div>
+          </>
+        ) : null}
+      </Dialog>
     </div>
   );
 }
@@ -458,7 +571,7 @@ const TABS = [
   { to: '/admin/workflow', label: 'Status & Workflow', icon: 'history' },
   { to: '/admin/sla', label: 'SLA', icon: 'schedule' },
   { to: '/admin/loesungen', label: 'Standardlösungen', icon: 'lightbulb' },
-  { to: '/admin/rollen', label: 'Rollen', icon: 'group' },
+  { to: '/admin/rollen', label: 'Benutzer & Rollen', icon: 'group' },
   { to: '/admin/audit', label: 'Audit-Log', icon: 'verified' },
 ];
 
@@ -468,7 +581,7 @@ export default function Admin() {
       <div className="page-head">
         <div>
           <h1 className="display-s">Administration</h1>
-          <p className="muted body-l">Katalog, Workflows, SLA, Rollen und Audit – alle Änderungen werden revisionssicher protokolliert.</p>
+          <p className="muted body-l">Katalog, Workflows, SLA, Benutzer & Rollen und Audit – alle Änderungen werden revisionssicher protokolliert.</p>
         </div>
       </div>
       <nav className="tabs" aria-label="Admin-Bereiche">
@@ -480,7 +593,7 @@ export default function Admin() {
         <Route path="workflow" element={<WorkflowAdmin />} />
         <Route path="sla" element={<SlaAdmin />} />
         <Route path="loesungen" element={<SolutionsAdmin />} />
-        <Route path="rollen" element={<RolesAdmin />} />
+        <Route path="rollen" element={<UsersAdmin />} />
         <Route path="audit" element={<AuditAdmin />} />
       </Routes>
     </>

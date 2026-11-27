@@ -30,8 +30,9 @@ if [[ ! -f .env ]]; then
   chmod 600 .env
   sed -i "s|^KEYCLOAK_ADMIN_PASSWORD=.*|KEYCLOAK_ADMIN_PASSWORD=$(gen)|" .env
   sed -i "s|^KEYCLOAK_DB_PASSWORD=.*|KEYCLOAK_DB_PASSWORD=$(gen)|" .env
+  sed -i "s|^KEYCLOAK_ADMIN_API_SECRET=.*|KEYCLOAK_ADMIN_API_SECRET=$(gen)|" .env
   echo "✓ .env aus Vorlage erstellt (Keycloak-Passwörter zufällig gesetzt)"
-  echo "  → PORTAL_HOSTNAME, ADMIN_ALLOW_CIDR und BACKUP_AGE_RECIPIENT in .env anpassen!"
+  echo "  → PORTAL_HOSTNAME, ADMIN_ALLOW_CIDR, REGISTRATION_EMAIL_REGEX, SMTP_* und BACKUP_AGE_RECIPIENT in .env anpassen!"
 else
   echo "• .env existiert bereits – unverändert"
 fi

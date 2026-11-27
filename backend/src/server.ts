@@ -2,13 +2,20 @@ import { buildApp } from './app.js';
 import { remoteJwks } from './auth.js';
 import { loadConfig } from './config.js';
 import { createPool } from './db.js';
+import { KeycloakAdmin } from './keycloakAdmin.js';
 
 const cfg = loadConfig();
 const { env } = cfg;
 const pool = createPool(cfg);
 
+const secret = env.KEYCLOAK_ADMIN_CLIENT_SECRET?.trim();
+const kc = secret && secret.length >= 16 && !secret.includes('CHANGE_ME')
+  ? new KeycloakAdmin({ baseUrl: env.KEYCLOAK_INTERNAL_URL, realm: env.KEYCLOAK_REALM, clientId: env.KEYCLOAK_ADMIN_CLIENT_ID, clientSecret: secret })
+  : null;
+
 const app = await buildApp({
   pool,
+  kc,
   publicOrigin: env.PUBLIC_ORIGIN!,
   logLevel: env.LOG_LEVEL,
   rateLimitMax: env.RATE_LIMIT_MAX,

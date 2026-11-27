@@ -25,7 +25,7 @@ export const PRIORITY_LABEL: Record<string, string> = {
 
 export const ROLE_LABEL: Record<string, string> = {
   user: 'Mitarbeitende',
-  'first-level': 'First-Level-Support',
+  'first-level': 'UHD / First-Level-Support',
   admin: 'Administration',
   system: 'System',
 };
