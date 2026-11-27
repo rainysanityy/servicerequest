@@ -132,6 +132,9 @@ Bewertung nach BSI 200-3: Eintrittshäufigkeit (selten / mittel / häufig / sehr
 | R16 | G 0.32 Missbrauch von Berechtigungen | Neues Benutzerkonto „wie Referenzperson“ übernimmt angesammelte Sonderrechte (Privilege Creep) | Pflichtbestätigung „gleiche Aufgaben“, Feld für Abweichungen, Freigabe durch Vorgesetzte, Prüfung der Referenzrechte durch Support, Befristung, Rezertifizierung | mittel (organisatorisch) |
 | R17 | G 0.19 Offenlegung schützenswerter Informationen | Private Schlüssel werden für Zertifikatsanträge per Ticket übermittelt | Schlüsselerzeugung auf dem Zielsystem, nur CSR, deutliche Warnhinweise im Formular, Support löscht Schlüssel aus Tickets und meldet Vorfall | gering |
 | R18 | G 0.23 Unbefugtes Eindringen | VPN-Zugang für Externe oder administrative Zugänge zu weitreichend | Eigener Katalogeintrag mit Zugangsart, Pflicht-Befristung, Freigabe, nur verwaltete Geräte, MFA | gering |
+| R20 | G 0.36 Identitätsdiebstahl / G 0.30 Unberechtigte Nutzung | Missbrauch der Selbstregistrierung (Fremd- oder Massenkonten) | E-Mail-Bestätigung, Domain-Prüfung im Backend, nur Rolle `user`, Rate Limits auf Registrierungsendpunkt, Brute-Force-Schutz, Sperren im Admin-Bereich | gering |
+| R21 | G 0.32 Missbrauch von Berechtigungen | Kompromittierung des Service-Accounts `portal-admin-api` (manage-users) | Secret nur im Backend (internes Netz), Client-Credentials ohne Browser-Flows, Token 120 s, nur Realm `itportal` (kein Master), Backend nutzt nur Gruppen der drei Portal-Rollen/Sperren, Audit jeder Änderung, Secret-Rotation | gering |
+| R22 | G 0.31 Fehlerhafte Administration | Aussperren durch Entzug der letzten Admin-Rechte | Serverseitige Schutzregeln (keine Selbst-Herabstufung, letzter Admin geschützt), Notfall-Admin in Keycloak | gering |
 | R19 | G 0.18 Fehlplanung | VMs in falschem Netzsegment (z. B. DMZ) oder ohne Backup/Monitoring | Pflichtangaben Netzsegment, Verantwortliche/r, Laufzeit; Prüfung durch Betrieb vor Bereitstellung | gering |
 
 **Risikobehandlung:** Die mittleren Restrisiken R2, R5 und R16 werden durch organisatorische Maßnahmen (Kap. 7) weiter gesenkt und vom ISB im Rahmen der Freigabe akzeptiert.
@@ -153,6 +156,8 @@ Bewertung nach BSI 200-3: Eintrittshäufigkeit (selten / mittel / häufig / sehr
 | Objektberechtigung | Nutzer sehen nur eigene Tickets; fremde IDs liefern 404 | AC-3 |
 | Workflow-Durchsetzung | Statusübergänge aus DB-Tabelle je Rolle, serverseitig geprüft, verweigerte Versuche auditiert | AC-3, AU-2 |
 | Admin-Pfade | `/auth/admin` und Master-Realm nur aus Admin-Netz | AC-17, SC-7 |
+| Selbstregistrierung | Keycloak-Registrierung mit E-Mail-Bestätigung, Standardgruppe `/Mitarbeitende`, Zugriff nur mit bestätigter Adresse aus `ALLOWED_EMAIL_DOMAINS` (Backend), keine Vergabe privilegierter Rollen | AC-2, IA-8 |
+| Rollenverwaltung | Admin-Oberfläche über Service-Account `portal-admin-api` (Client Credentials, Realm-beschränkt); sofortiges Beenden von Sitzungen bei Rechteentzug; Schutz vor Selbst-/Letzt-Admin-Herabstufung; Begründungspflicht im Audit | AC-2, AC-2(4), AC-6 |
 
 ## Anwendungssicherheit (OWASP Top 10)
 

@@ -27,9 +27,9 @@ Grundlegende Bedienung (Anmeldung, Oberfläche, Dark/Light Mode, Erstellen von A
 | Abgeschlossene/abgelehnte Tickets wiedereröffnen | – | – | ✓ |
 | Katalog, Formulare, Kategorien | – | – | ✓ |
 | Status, Workflow, SLA, Standardlösungen pflegen | – | – | ✓ |
-| Rollenübersicht, Audit-Log, Systemansicht | – | – | ✓ |
+| Benutzer & Rollen (UHD/Admin vergeben, sperren), Audit-Log, Systemansicht | – | – | ✓ |
 
-Rollen werden ausschließlich in **Keycloak** über Gruppen vergeben (`/Mitarbeitende`, `/IT-UHD`, `/IT-Portal-Admins`). Das Portal prüft jede Aktion **serverseitig**; ausgeblendete Schaltflächen sind keine Sicherheitsmaßnahme, sondern Komfort.
+Rollen werden über Keycloak-Gruppen abgebildet (`/Mitarbeitende`, `/IT-UHD`, `/IT-Portal-Admins`) und von Administratoren direkt im Portal unter **Admin → Benutzer & Rollen** vergeben (siehe Teil B). Neue Konten aus der **Selbstregistrierung** erhalten automatisch die Rolle `user` (Gruppe `/Mitarbeitende`). Das Portal prüft jede Aktion **serverseitig**; ausgeblendete Schaltflächen sind keine Sicherheitsmaßnahme, sondern Komfort.
 
 ::: warning
 **Pflicht für Support und Administration:** Zwei-Faktor-Authentisierung (TOTP-App, z. B. FreeOTP, Microsoft/Google Authenticator). Keycloak fordert die Einrichtung beim ersten Login an. Zugangsdaten und Authenticator-Gerät dürfen nicht weitergegeben werden.
@@ -284,19 +284,44 @@ Je Priorität: Bezeichnung, Reaktionszeit, Lösungszeit (Minuten) und *Nur Gesch
 
 Textbausteine für häufige Lösungen. Felder: Titel, Kategorie (oder *alle*), Text an die anfragende Person, Aktiv. Inaktive Bausteine stehen im Support nicht mehr zur Auswahl. Formulieren Sie Bausteine so, dass sie ohne Anpassung verständlich sind.
 
-## Rollen
+## Benutzer & Rollen
 
-Die Seite zeigt die **erwarteten Rollen** mit zugehörigen Keycloak-Gruppen, die Anzahl der Personen je Rolle und eine Liste aller bisher angemeldeten Personen mit ihren zuletzt im Token gesehenen Rollen. Automatische **Warnungen** weisen hin auf:
+Unter **Admin → Benutzer & Rollen** verwalten Sie alle Konten des Realms `itportal` direkt im Portal.
 
-* fehlende Administratoren,
-* mehr als fünf Administratoren (Least-Privilege prüfen),
-* Administratoren, die länger als 90 Tage inaktiv sind (Rezertifizierung).
+**Übersicht:** Drei Karten zeigen die Rollen *Mitarbeitende*, *UHD / First-Level-Support* und *Administration* mit zugehöriger Keycloak-Gruppe und Anzahl der Mitglieder. Warnungen weisen auf fehlende oder zu viele Administratoren sowie lange inaktive Admin-Konten hin.
 
-Rollenänderungen erfolgen in Keycloak (Admin-Konsole, nur aus dem Admin-Netz erreichbar): **Benutzer → Gruppen → Gruppe beitreten/verlassen**. Die neue Rolle wirkt ab dem nächsten Token (spätestens nach 5 Minuten bzw. nach erneuter Anmeldung).
+**Benutzer suchen:** Suche nach Name, Benutzername oder E-Mail. Die Tabelle zeigt Person, E-Mail (inkl. Hinweis *E-Mail nicht bestätigt*), Benutzername, Status (*aktiv* / *gesperrt*) und die Rolle im Portal.
 
-::: tip
-**Quartalsweise Rezertifizierung:** Exportieren Sie die Rollenliste, lassen Sie sie von den Führungskräften bestätigen und entfernen Sie nicht mehr benötigte Gruppenmitgliedschaften in Keycloak. Dokumentieren Sie den Abschluss als Ticket.
+**Rolle vergeben:**
+
+1. In der Zeile der Person die gewünschte Rolle wählen: **Mitarbeitende**, **UHD** oder **Admin**.
+2. Im Dialog die Änderung prüfen und eine **Begründung bzw. Ticketnummer** eintragen (wird im Audit-Log gespeichert).
+3. **Bestätigen**.
+
+| Änderung | Wirkung |
+|---|---|
+| Höhere Rolle (z. B. Mitarbeitende → UHD) | wirksam bei der nächsten Anmeldung bzw. spätestens nach 5 Minuten (Token-Laufzeit) |
+| Niedrigere Rolle (z. B. Admin → UHD) | **alle Sitzungen der Person werden sofort beendet**, die neue Rolle gilt ab der nächsten Anmeldung |
+| Sperren | Anmeldung nicht mehr möglich, Sitzungen werden sofort beendet |
+| Entsperren | Anmeldung wieder möglich |
+
+**Schutzregeln (serverseitig erzwungen):**
+
+* Sie können sich die **eigene Administratorrolle nicht entziehen** und Ihr **eigenes Konto nicht sperren**.
+* Der **letzte Administrator** kann weder herabgestuft noch gesperrt werden.
+* Jede Änderung wird im Audit-Log protokolliert (`admin.user.role`, `admin.user.enable`, `admin.user.disable`) – mit alter und neuer Rolle, Begründung und Angabe, ob Sitzungen beendet wurden.
+
+::: warning
+Vergeben Sie die Rolle **Admin** nur nach Freigabe (Ticket) und nur an Personen mit eingerichteter Zwei-Faktor-Authentisierung. Prüfen Sie bei selbst registrierten Konten vor einer Rollenvergabe, dass E-Mail-Adresse und Person zusammenpassen.
 :::
+
+**Quartalsweise Rezertifizierung:** Filtern Sie die Liste nach UHD- und Admin-Konten, lassen Sie die Zuordnung von den Führungskräften bestätigen und stufen Sie nicht mehr benötigte Konten herab. Dokumentieren Sie den Abschluss als Ticket.
+
+### Selbstregistrierung
+
+* Neue Konten erhalten automatisch die Gruppe `/Mitarbeitende` (Rolle `user`) und müssen ihre E-Mail-Adresse bestätigen.
+* Nur Adressen aus den in `ALLOWED_EMAIL_DOMAINS` hinterlegten Domains erhalten Zugriff auf das Portal; andere Konten werden abgewiesen (Audit `auth.denied`, Grund `email_domain_or_unverified`).
+* Nicht bestätigte oder offensichtlich missbräuchliche Konten sperren Sie unter *Benutzer & Rollen* bzw. löschen sie in der Keycloak-Konsole.
 
 ## Audit-Log
 
@@ -306,7 +331,8 @@ Das Audit-Log protokolliert sicherheits- und prüfungsrelevante Ereignisse, u. a
 |---|---|
 | `ticket.create`, `ticket.status`, `ticket.assign`, `ticket.priority`, `ticket.comment`, `ticket.solution` | Ticketbearbeitung |
 | `admin.catalog.*`, `admin.category.upsert`, `admin.workflow.update`, `admin.status.update`, `admin.sla.update`, `admin.solution.*` | Administration |
-| `authz.denied`, `auth.denied` | Zugriff ohne erforderliche Rolle |
+| `admin.user.role`, `admin.user.enable`, `admin.user.disable` | Rollenvergabe, Sperren/Entsperren |
+| `authz.denied`, `auth.denied` | Zugriff ohne erforderliche Rolle, nicht erlaubte E-Mail-Domain |
 | `admin.audit.verify`, `system.retention` | Integritätsprüfung, Löschlauf |
 
 **Filter:** Aktion (Präfix, z. B. `admin.`), Person, Objekt-ID (z. B. Ticketnummer `SR-001234`), Ergebnis (*Erfolg*, *Verweigert*, *Fehler*).
@@ -321,8 +347,9 @@ Audit-Einträge sind in der Datenbank **unveränderlich** (keine Änderungs- ode
 
 | Aufgabe | Ort in Keycloak (Realm `itportal`) |
 |---|---|
-| Rolle vergeben/entziehen | Users → Benutzer → Groups |
-| Konto sperren | Users → Benutzer → *Enabled* aus |
+| Rolle vergeben/entziehen | im Portal: *Admin → Benutzer & Rollen* (alternativ Keycloak: Users → Benutzer → Groups) |
+| Konto sperren | im Portal: *Admin → Benutzer & Rollen → Sperren* |
+| Registrierung, E-Mail-Versand | Realm settings → Login (*User registration*, *Verify email*) / Email (SMTP) |
 | Passwort zurücksetzen | Users → Benutzer → Credentials → Reset password (temporär) |
 | MFA zurücksetzen | Users → Benutzer → Credentials → OTP löschen |
 | Sitzungen beenden | Users → Benutzer → Sessions → Sign out |
@@ -351,6 +378,7 @@ Die Keycloak-Admin-Konsole ist nur aus dem in `ADMIN_ALLOW_CIDR` definierten Adm
 
 ## Quartalsweise (Administration)
 
-- [ ] Rollen-Rezertifizierung (siehe Abschnitt Rollen)
+- [ ] Rollen-Rezertifizierung (siehe Abschnitt Benutzer & Rollen)
+- [ ] Selbst registrierte, nie bestätigte Konten (älter als 30 Tage) löschen
 - [ ] Keycloak: inaktive Konten, Admin-Konten, Clients und Redirect-URIs prüfen
 - [ ] Restore-Test aus Backup (gemeinsam mit Betrieb, siehe *Betriebskonzept*)

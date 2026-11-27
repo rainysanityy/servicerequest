@@ -55,6 +55,13 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder
   </tr>
 </table>
 
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/16-admin-benutzer-rollen.png" alt="Admin: Benutzer und Rollen"><br><sub><b>Benutzer & Rollen</b> – Mitarbeitende / UHD / Admin vergeben, sperren</sub></td>
+    <td width="50%"><img src="docs/screenshots/17-registrierung-dunkel.png" alt="Selbstregistrierung in Keycloak"><br><sub><b>Selbstregistrierung</b> (Keycloak, mit E-Mail-Bestätigung)</sub></td>
+  </tr>
+</table>
+
 <p align="center">
   <img src="docs/screenshots/13-admin-audit.png" alt="Admin: Audit-Log" width="700"><br><sub><b>Audit-Log</b> mit Integritätsprüfung (Hash-Kette)</sub>
 </p>
@@ -70,6 +77,7 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder
 ## Funktionen
 
 **Für Mitarbeitende**
+- **Selbstregistrierung** über Keycloak mit E-Mail-Bestätigung; Zugriff nur mit geschäftlicher E-Mail-Domain (`ALLOWED_EMAIL_DOMAINS`)
 - Startseite mit Kategorien, Schnellzugriff und Hinweisen auf offene Rückfragen
 - Service-Katalog mit Suche und geführten Formularen (Pflichtfelder, Formatprüfung, bedingte Felder, Befristung von Berechtigungen):
 
@@ -94,7 +102,8 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder
 **Für die Administration**
 - Katalog und Formulare (JSON-Definition mit bedingten Feldern `when`, Bundle-Regel `requireOneOf`, serverseitiger Validierung inkl. ReDoS-Schutz), Kategorien
 - Status und Workflow-Matrix je Rolle, SLA-Zeiten, Standardlösungen
-- Rollenübersicht mit Rezertifizierungs-Warnungen, Audit-Log mit Filter und Integritätsprüfung (Hash-Kette), Systemsicht
+- **Benutzer & Rollen**: Konten suchen, Rollen **Mitarbeitende / UHD / Admin** vergeben, sperren/entsperren – mit Begründung im Audit-Log, sofortigem Sitzungsende bei Rechteentzug und Schutz vor Selbst- bzw. Letzt-Admin-Herabstufung
+- Audit-Log mit Filter und Integritätsprüfung (Hash-Kette), Systemsicht
 
 ## Architektur
 
@@ -154,7 +163,7 @@ Danach `https://<PORTAL_HOSTNAME>/` öffnen. Demo-Konten (nur nach `load-demo-us
 | `first-level` | `/IT-UHD` | zusätzlich Support-Queue, Zuweisung, Priorität, Status, Rückfragen, interne Notizen, Standardlösungen |
 | `admin` | `/IT-Portal-Admins` | zusätzlich Katalog/Formulare, Workflow, SLA, Standardlösungen, Rollenübersicht, Audit-Log, Systemsicht |
 
-Rollen werden **serverseitig an jedem Endpunkt** geprüft; Objektzugriffe zusätzlich auf Eigentümerschaft (fremde Tickets → 404). Die Oberfläche blendet nur aus.
+Neue Konten aus der Selbstregistrierung landen automatisch in `/Mitarbeitende`; UHD- und Admin-Rollen vergeben Administratoren im Portal unter *Admin → Benutzer & Rollen* (über den Keycloak-Service-Account `portal-admin-api`). Rollen werden **serverseitig an jedem Endpunkt** geprüft; Objektzugriffe zusätzlich auf Eigentümerschaft (fremde Tickets → 404). Die Oberfläche blendet nur aus.
 
 ## Sicherheit
 
@@ -216,7 +225,7 @@ npm run dev              # Vite-Dev-Server, Proxy auf https://localhost:8443 (la
 npm run build
 ```
 
-Die CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) führt bei jedem Push aus: Typecheck, Tests und Build für Backend und Frontend, Migrationen gegen PostgreSQL 17 inkl. Rechteprüfung der App-Rolle, Validierung der Compose-Datei und Skripte, Container-Builds und einen Trivy-Scan. Dependabot hält npm-Pakete, Basis-Images und Actions aktuell.
+Die CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) führt bei jedem Push aus: Typecheck, Tests und Build für Backend und Frontend, Migrationen gegen PostgreSQL 17 inkl. Rechteprüfung der App-Rolle, einen Integrationstest gegen einen echten Keycloak (Realm-Import, Registrierung mit PKCE, Admin-API des Backends, kein Zugriff auf den Master-Realm), Validierung der Compose-Datei und Skripte, Container-Builds und einen Trivy-Scan. Dependabot hält npm-Pakete, Basis-Images und Actions aktuell.
 
 ## Betrieb
 

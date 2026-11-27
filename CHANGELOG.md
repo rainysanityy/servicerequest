@@ -5,6 +5,9 @@ Alle nennenswerten Änderungen an diesem Projekt. Format angelehnt an [Keep a Ch
 ## [Unveröffentlicht]
 
 ### Hinzugefügt
+- Selbstregistrierung über Keycloak (E-Mail-Bestätigung, Standardgruppe `/Mitarbeitende`, Domain-Prüfung `ALLOWED_EMAIL_DOMAINS` im Backend)
+- Admin-Bereich *Benutzer & Rollen*: Rollen Mitarbeitende/UHD/Admin vergeben, Konten sperren/entsperren (Service-Account `portal-admin-api`), Schutzregeln, Audit
+- CI-Integrationstest gegen echten Keycloak
 - Katalog v2 (Migration `003_catalog_v2.sql`):
   - Hardware: APC, Monitor, Mobiltelefon, Tablet, Maus, Tastatur, Webcam – einzeln oder als Hardware-Bundle mit Stückzahlen
   - Software als Freitext
@@ -17,6 +20,7 @@ Alle nennenswerten Änderungen an diesem Projekt. Format angelehnt an [Keep a Ch
 - UI-Screenshots in der README, automatisch erzeugt über den Workflow „Screenshots“ (Playwright, simulierte Daten)
 
 ### Behoben
+- Realm-Import: eigene Client-Scopes verhinderten die Keycloak-Standard-Scopes (`profile`, `email`, `roles`) – Tokens hätten keine Rollen enthalten; Audience-Mapper jetzt direkt am Client
 - Filter in „Meine Tickets“ ging nach dem Keycloak-Login verloren (URL-Parameter `state` kollidierte mit OIDC; jetzt `filter`)
 - Layout: Kategoriekacheln, Navigationsbeschriftung, Filterchips, Toolbar-Felder, mobile Detailansicht
 - Backend-Typfehler, Compose-PID-Limit, Trivy-Einbindung in der CI

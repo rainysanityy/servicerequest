@@ -134,6 +134,9 @@ vi .env
 | `ADMIN_ALLOW_CIDR` | Netz für Keycloak-Admin-Konsole | `10.10.0.0/24` |
 | `KEYCLOAK_ADMIN_USER/PASSWORD` | Temporärer Bootstrap-Admin | zufällig erzeugt |
 | `KEYCLOAK_DB_PASSWORD` | Keycloak-DB | zufällig erzeugt |
+| `KEYCLOAK_ADMIN_API_SECRET` | Secret des Service-Accounts `portal-admin-api` (Benutzer & Rollen) | zufällig erzeugt |
+| `ALLOWED_EMAIL_DOMAINS` | Domains für selbst registrierte Konten (kommagetrennt) | `firma.de,firma-gruppe.de` |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM` | Mailversand (E-Mail-Bestätigung, Passwort-Reset) | `mail.firma.de` / `587` |
 | `RATE_LIMIT_MAX` | API-Requests/Minute je IP | `300` |
 | `RETENTION_TICKET_DAYS` | Anonymisierung abgeschlossener Tickets | `1095` |
 | `RETENTION_AUDIT_DAYS` | Löschung Audit-Log | `365` |
@@ -165,8 +168,11 @@ Beim ersten Start legt PostgreSQL die Rollen `portal_migrator` und `portal_app` 
 3. **Bootstrap-Konto löschen** und `KEYCLOAK_ADMIN_PASSWORD` aus `.env` entfernen.
 4. Realm `itportal` prüfen: Clients `portal-frontend` (öffentlich, PKCE S256, Redirect-URI `https://<host>/*`) und `portal-api` (Audience), Client-Scope `portal-api-audience`, Gruppen und Realm-Rollen.
 5. **Benutzeranbindung:** *User Federation → LDAP/Active Directory* (Modus *READ_ONLY*, LDAPS, Bind-Konto mit Leserechten) einrichten; Gruppen über *group-ldap-mapper* auf `/Mitarbeitende`, `/IT-UHD`, `/IT-Portal-Admins` abbilden **oder** Gruppenmitgliedschaften direkt in Keycloak pflegen.
-6. SMTP für Passwort-Reset-Mails konfigurieren (*Realm settings → Email*).
-7. Demo-Benutzer (nur Test) aus `keycloak/import/` entfernen.
+6. SMTP prüfen (*Realm settings → Email*, Werte aus `SMTP_*`) und eine Testmail senden – ohne funktionierenden Mailversand ist die Selbstregistrierung (E-Mail-Bestätigung) nicht nutzbar.
+7. Ersten Portal-Admin festlegen: dem eigenen Konto in Keycloak die Gruppe `/IT-Portal-Admins` zuweisen. Alle weiteren Rollen werden danach im Portal unter *Admin → Benutzer & Rollen* vergeben.
+8. Demo-Benutzer (nur Test) aus `keycloak/import/` entfernen.
+
+**Bestehende Installation (Realm bereits importiert):** Der Import überschreibt keinen vorhandenen Realm. Für Selbstregistrierung und Rollenverwaltung in der Admin-Konsole einmalig: *Realm settings → Login*: „User registration“ und „Verify email“ aktivieren; *Realm settings → User registration → Default groups*: `/Mitarbeitende`; *Clients → Create*: `portal-admin-api` (Client authentication an, nur *Service accounts roles*), Secret = `KEYCLOAK_ADMIN_API_SECRET`; *Service account roles*: `realm-management` → `query-users`, `view-users`, `query-groups`, `manage-users`.
 
 ::: warning
 Der Realm-Import erfolgt nur, wenn der Realm noch nicht existiert. Spätere Änderungen werden **in der Admin-Konsole** vorgenommen und über den Export (`kc.sh export --realm itportal`) versioniert.
@@ -331,6 +337,7 @@ docker compose ps && ./scripts/smoke-test.sh
 | TLS-Zertifikat | gemäß PKI (≤ 1 Jahr) | neue Dateien in `proxy/certs/`, `docker compose restart proxy` |
 | Keycloak-Signaturschlüssel | jährlich | *Realm settings → Keys → Add provider (rsa-generated)*, alten Schlüssel nach Ablauf der Token-Laufzeit deaktivieren |
 | DB-Passwörter | jährlich / bei Personalwechsel | siehe Informationssicherheitskonzept, Kap. „Secret-Rotation“ |
+| `KEYCLOAK_ADMIN_API_SECRET` | jährlich / bei Verdacht | Keycloak: *Clients → portal-admin-api → Credentials → Regenerate*, Wert in `.env` übernehmen, `docker compose up -d backend` |
 | SSH-Schlüssel der Admins | bei Ausscheiden sofort | `authorized_keys` bereinigen, Gruppe `sshusers` |
 
 # Störungs- und Eskalationsmanagement
