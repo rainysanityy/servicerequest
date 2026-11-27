@@ -2,9 +2,21 @@ import type { FieldDef, FormSchema } from '../api/types';
 
 export type FormValues = Record<string, string | number | boolean | undefined>;
 
+/** Bedingtes Feld aktiv? (when: { field, equals }) */
+export function isActive(f: FieldDef, values: FormValues): boolean {
+  return !f.when || values[f.when.field] === f.when.equals;
+}
+
+function isFilled(v: FormValues[string]): boolean {
+  if (v === undefined || v === '' || v === false) return false;
+  if (typeof v === 'number') return !Number.isNaN(v) && v > 0;
+  return true;
+}
+
 /** Clientseitige Vorprüfung (Komfort) – maßgeblich ist die serverseitige Validierung. */
 export function validateField(f: FieldDef, v: FormValues[string]): string | null {
   const empty = v === undefined || v === '' || (f.type === 'number' && Number.isNaN(v));
+  if (f.required && f.type === 'checkbox' && v !== true) return 'Bitte bestätigen';
   if (f.required && f.type !== 'checkbox' && empty) return `${f.label} ist ein Pflichtfeld`;
   if (empty) return null;
   if ((f.type === 'text' || f.type === 'textarea' || f.type === 'email') && typeof v === 'string') {
@@ -28,8 +40,12 @@ export function validateField(f: FieldDef, v: FormValues[string]): string | null
 export function validateAll(schema: FormSchema, values: FormValues): Record<string, string> {
   const errs: Record<string, string> = {};
   for (const f of schema.fields) {
+    if (!isActive(f, values)) continue;
     const e = validateField(f, values[f.name]);
     if (e) errs[f.name] = e;
+  }
+  if (schema.requireOneOf && !schema.requireOneOf.some((n) => isFilled(values[n]))) {
+    errs['__oneOf'] = 'Bitte mindestens eine Position angeben';
   }
   return errs;
 }
@@ -38,6 +54,7 @@ export function validateAll(schema: FormSchema, values: FormValues): Record<stri
 export function toPayload(schema: FormSchema, values: FormValues): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const f of schema.fields) {
+    if (!isActive(f, values)) continue;
     const v = values[f.name];
     if (f.type === 'checkbox') out[f.name] = v === true;
     else if (v !== undefined && v !== '' && !(typeof v === 'number' && Number.isNaN(v))) out[f.name] = v;
@@ -55,7 +72,7 @@ export function DynamicForm({
 }) {
   return (
     <div className="form-grid">
-      {schema.fields.map((f) => {
+      {schema.fields.filter((f) => isActive(f, values)).map((f) => {
         const id = `f-${f.name}`;
         const err = errors[f.name];
         const descId = err || f.help ? `${id}-desc` : undefined;

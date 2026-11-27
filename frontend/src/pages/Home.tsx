@@ -23,7 +23,7 @@ export default function Home() {
   const summary = useApi(() => api.get<Summary>('/api/tickets/summary'), []);
   const recent = useApi(() => api.get<Paged<TicketListItem>>('/api/tickets', { state: 'open', pageSize: 5 }), []);
 
-  const popular = catalog.data?.categories.flatMap((c) => c.items.filter((i) => i.popular).map((i) => ({ ...i, icon: c.icon }))) ?? [];
+  const popular = catalog.data?.categories.flatMap((c) => c.items.filter((i) => i.popular).map((i) => ({ ...i, icon: c.icon }))).slice(0, 6) ?? [];
   const firstName = me.name.split(' ')[0];
 
   return (

@@ -49,6 +49,21 @@ export function toneFor(key: string): string {
 export const CATEGORY_TONE: Record<string, string> = {
   hardware: 'tone-primary',
   software: 'tone-tertiary',
+  telephony: 'tone-success',
   access: 'tone-secondary',
-  general: 'tone-success',
+  accounts: 'tone-warning',
+  vm: 'tone-primary',
+  certificates: 'tone-tertiary',
+  general: 'tone-neutral',
+};
+
+export const CATEGORY_ICON: Record<string, string> = {
+  hardware: 'laptop',
+  software: 'apps',
+  telephony: 'call',
+  access: 'key',
+  accounts: 'person_add',
+  vm: 'dns',
+  certificates: 'verified',
+  general: 'help',
 };

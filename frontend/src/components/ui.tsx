@@ -4,7 +4,7 @@ import {
 import { Link } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import type { ColorRole, TicketListItem } from '../api/types';
-import { fmtRelative, PRIORITY_LABEL } from '../util/format';
+import { CATEGORY_ICON, fmtRelative, PRIORITY_LABEL } from '../util/format';
 import { Icon } from './Icon';
 
 /* ---------------------------------------------------------------- Status-Chip */
@@ -86,7 +86,7 @@ export function TicketRow({ t, to, showRequester }: { t: TicketListItem; to: str
   return (
     <Link className="list-item" to={to}>
       <span className={`avatar ${t.overdue ? 'tone-error' : 'tone-secondary'}`} aria-hidden="true">
-        <Icon name={t.category_id === 'hardware' ? 'laptop' : t.category_id === 'software' ? 'apps' : t.category_id === 'access' ? 'key' : 'help'} size={20} />
+        <Icon name={CATEGORY_ICON[t.category_id] ?? 'help'} size={20} />
       </span>
       <span className="stack">
         <span className="title-m">{t.title}</span>

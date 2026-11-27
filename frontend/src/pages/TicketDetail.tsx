@@ -149,7 +149,7 @@ export default function TicketDetail({ supportView = false }: { supportView?: bo
             <h2 id="details-title" className="title-l">Angaben zur Anfrage</h2>
             {t.anonymized ? <p className="muted">Dieses Ticket wurde gemäß Löschkonzept anonymisiert.</p> : (
               <dl className="kv">
-                {(t.form_schema?.fields ?? []).map((f) => (
+                {(t.form_schema?.fields ?? []).filter((f) => !f.when || t.form_data[f.name] !== undefined).filter((f) => !(t.form_schema?.requireOneOf?.includes(f.name) && !t.form_data[f.name])).map((f) => (
                   <div key={f.name} className="kv-row"><dt>{f.label}</dt><dd>{renderValue(f, t.form_data[f.name])}</dd></div>
                 ))}
                 {t.description ? <div className="kv-row"><dt>Weitere Hinweise</dt><dd className="pre">{t.description}</dd></div> : null}

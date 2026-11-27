@@ -81,6 +81,22 @@ describe('Formular-Validierung', () => {
     expect(() => parseFormData(schema, { model: 'a', cc: '4711', qty: 99 })).toThrow();
     expect(() => parseFormData(schema, { model: 'a', cc: '4711', mail: 'kein-mail' })).toThrow();
   });
+  it('Bundle: mindestens eine Position (requireOneOf)', () => {
+    const bundle = { requireOneOf: ['a', 'b'], fields: [
+      { name: 'a', label: 'A', type: 'number', min: 0, max: 5 },
+      { name: 'b', label: 'B', type: 'number', min: 0, max: 5 }] };
+    expect(() => parseFormData(bundle, { a: 0, b: 0 })).toThrow();
+    expect(parseFormData(bundle, { a: 0, b: 2 })).toEqual({ a: 0, b: 2 });
+  });
+  it('Bedingte Felder (when) und Pflicht-Checkbox', () => {
+    const tel = { fields: [
+      { name: 'kind', label: 'Art', type: 'select', required: true, options: [{ value: 'soft', label: 'S' }, { value: 'hard', label: 'H' }] },
+      { name: 'model', label: 'Modell', type: 'select', required: true, when: { field: 'kind', equals: 'hard' }, options: [{ value: 'desk', label: 'D' }] },
+      { name: 'ok', label: 'Bestätigung', type: 'checkbox', required: true }] };
+    expect(() => parseFormData(tel, { kind: 'hard', ok: true })).toThrow();
+    expect(parseFormData(tel, { kind: 'soft', model: 'desk', ok: true })).toEqual({ kind: 'soft', ok: true });
+    expect(() => parseFormData(tel, { kind: 'soft', ok: false })).toThrow();
+  });
   it('blockiert ReDoS-anfällige Muster im Meta-Schema', () => {
     const bad = { fields: [{ name: 'x', label: 'X', type: 'text', pattern: '^(a+)+$' }] };
     expect(FormSchema.safeParse(bad).success).toBe(false);

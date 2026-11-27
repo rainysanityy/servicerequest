@@ -22,8 +22,9 @@ export interface FieldDef {
   min?: number;
   max?: number;
   options?: FieldOption[];
+  when?: { field: string; equals: string | boolean };
 }
-export interface FormSchema { fields: FieldDef[] }
+export interface FormSchema { fields: FieldDef[]; requireOneOf?: string[] }
 
 export interface CatalogItem {
   id: string;

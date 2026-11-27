@@ -167,7 +167,7 @@ function CatalogAdmin() {
             <div className="field">
               <label htmlFor="i-schema">Formulardefinition (JSON)</label>
               <textarea id="i-schema" className="textarea code-edit" spellCheck={false} value={schemaText} onChange={(e) => setSchemaText(e.target.value)} />
-              <span className="supporting">Feldtypen: text, textarea, email, number, date, checkbox, select. Attribute: name, label, required, help, maxLength, pattern, min, max, options[]. Die Definition wird serverseitig validiert (u. a. ReDoS-Schutz für Muster).</span>
+              <span className="supporting">Feldtypen: text, textarea, email, number, date, checkbox, select. Attribute: name, label, required, help, maxLength, pattern, min, max, options[], when {`{field, equals}`} (bedingtes Feld). Formularebene: requireOneOf [Feldnamen] (mind. eines ausgefüllt, z. B. Bundles). Die Definition wird serverseitig validiert (u. a. ReDoS-Schutz für Muster).</span>
             </div>
           </>
         ) : null}
@@ -184,7 +184,7 @@ function CatalogAdmin() {
             <div className="form-grid">
               <div className="field"><label htmlFor="c-icon">Icon</label>
                 <select id="c-icon" className="select" value={catEdit.icon} onChange={(e) => setCatEdit({ ...catEdit, icon: e.target.value })}>
-                  {['laptop', 'apps', 'key', 'help', 'support', 'lock', 'dns', 'group', 'chat', 'bolt'].map((i) => <option key={i} value={i}>{i}</option>)}
+                  {['laptop', 'apps', 'call', 'key', 'person_add', 'dns', 'verified', 'help', 'support', 'lock', 'group', 'chat', 'bolt'].map((i) => <option key={i} value={i}>{i}</option>)}
                 </select></div>
               <div className="field"><label htmlFor="c-sort">Reihenfolge</label><input id="c-sort" type="number" className="input" value={catEdit.sort_order} onChange={(e) => setCatEdit({ ...catEdit, sort_order: Number(e.target.value) || 0 })} /></div>
             </div>

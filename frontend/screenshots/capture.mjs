@@ -7,7 +7,7 @@
 //   node screenshots/capture.mjs http://localhost:4173 ../docs/screenshots
 // =============================================================================
 import { chromium } from 'playwright';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 
 const BASE = process.argv[2] ?? 'http://localhost:4173';
 const OUT = process.argv[3] ?? '../docs/screenshots';
@@ -35,32 +35,37 @@ const statuses = Object.entries(STATUS).map(([code, [label, color_role, is_final
   code, label, color_role, is_final, description: '', sort_order: (i + 1) * 10,
 }));
 
-const NOTEBOOK_SCHEMA = { fields: [
-  { name: 'model', label: 'Modell', type: 'select', required: true, options: [
-    { value: 'standard-14', label: 'Standard 14" (Office)' }, { value: 'performance-16', label: 'Performance 16" (Entwicklung/CAD)' },
-    { value: 'ultralight-13', label: 'Ultralight 13" (Mobil)' }] },
-  { name: 'reason', label: 'Anlass', type: 'select', required: true, options: [
-    { value: 'new-hire', label: 'Neue/r Mitarbeitende/r' }, { value: 'replacement', label: 'Ersatz (defekt/veraltet)' },
-    { value: 'additional', label: 'Zusätzliches Gerät' }] },
-  { name: 'oldAssetTag', label: 'Inventarnummer Altgerät', type: 'text', maxLength: 30, help: 'Nur bei Ersatz' },
-  { name: 'costCenter', label: 'Kostenstelle', type: 'text', required: true, maxLength: 10, pattern: '^[0-9]{3,10}$' },
-  { name: 'approverEmail', label: 'E-Mail der/des Vorgesetzten (Freigabe)', type: 'email', required: true },
-  { name: 'neededBy', label: 'Benötigt bis', type: 'date' },
-  { name: 'justification', label: 'Begründung', type: 'textarea', required: true, maxLength: 2000 },
-] };
-
-const catalog = { categories: [
-  { id: 'hardware', name: 'Hardware', description: 'Notebooks, Monitore, Dockingstationen, Zubehör', icon: 'laptop', items: [
-    { id: '11111111-1111-4111-8111-111111111111', category_id: 'hardware', name: 'Notebook anfordern', description: 'Neues oder Ersatz-Notebook nach Unternehmensstandard', requires_approval: true, popular: true },
-    { id: '11111111-1111-4111-8111-111111111112', category_id: 'hardware', name: 'Monitor / Dockingstation', description: 'Zusätzlicher Monitor, Dock oder Ersatz', requires_approval: true, popular: true },
-    { id: '11111111-1111-4111-8111-111111111113', category_id: 'hardware', name: 'Zubehör', description: 'Headset, Maus, Tastatur, Adapter', requires_approval: false, popular: false }] },
-  { id: 'software', name: 'Software', description: 'Standard- und Fachsoftware, Lizenzen, Installationen', icon: 'apps', items: [
-    { id: '22222222-2222-4222-8222-222222222221', category_id: 'software', name: 'Software installieren', description: 'Standard- oder Fachsoftware aus dem Softwarekatalog', requires_approval: false, popular: true }] },
-  { id: 'access', name: 'Berechtigungen', description: 'Gruppen, Laufwerke/Shares, Applikationsrollen', icon: 'key', items: [
-    { id: '33333333-3333-4333-8333-333333333331', category_id: 'access', name: 'Gruppenmitgliedschaft / Share-Zugriff', description: 'Zugriff auf Gruppen, Laufwerke oder Netzfreigaben', requires_approval: true, popular: true }] },
-  { id: 'general', name: 'Allgemeine IT-Anfrage', description: 'Fragen, Störungen und alles Weitere', icon: 'help', items: [
-    { id: '44444444-4444-4444-8444-444444444441', category_id: 'general', name: 'Allgemeine Anfrage / Störung', description: 'Frage, Problem oder Wunsch ohne passende Kategorie', requires_approval: false, popular: true }] },
-] };
+// Katalog direkt aus den SQL-Migrationen lesen (bleibt automatisch synchron)
+const MIG = new URL('../../backend/migrations/', import.meta.url);
+const sql = ['002_seed.sql', '003_catalog_v2.sql'].map((f) => readFileSync(new URL(f, MIG), 'utf8')).join('\n');
+const CATS = [
+  ['hardware', 'Hardware', 'PC, Monitor, Mobiltelefon, Tablet, Maus, Tastatur, Webcam – einzeln oder als Bundle', 'laptop'],
+  ['software', 'Software', 'Beliebige Software per Freitext anfragen', 'apps'],
+  ['telephony', 'Telefonie', 'Softphone oder Hardphone (Tischtelefon) bestellen', 'call'],
+  ['access', 'Berechtigungen & VPN', 'Netzlaufwerke, Mail-Postfächer, VPN-Zugang', 'key'],
+  ['accounts', 'Benutzerkonten', 'Neues Benutzerkonto mit Berechtigungen einer Referenzperson', 'person_add'],
+  ['vm', 'Server & VMs', 'Virtuelle Maschinen mit individuellen Ressourcen', 'dns'],
+  ['certificates', 'Zertifikate', 'SSL/TLS-Serverzertifikate und E-Mail-Zertifikate (S/MIME)', 'verified'],
+  ['general', 'Allgemeine IT-Anfrage', 'Fragen, Störungen und alles Weitere', 'help'],
+];
+const OLD = new Set(['Notebook anfordern', 'Monitor / Dockingstation', 'Zubehör', 'Software installieren', 'Gruppenmitgliedschaft / Share-Zugriff']);
+const ITEM_RE = /\('([a-z-]+)', '([^']+)', '([^']*)', '(\w+)', (TRUE|FALSE), (TRUE|FALSE), (\d+),\s*'(\{[\s\S]*?\})'::jsonb\)/g;
+let k = 0;
+const allItems = [...sql.matchAll(ITEM_RE)]
+  .filter((m) => !OLD.has(m[2]))
+  .map((m) => ({
+    id: `bbbbbbbb-0000-4000-8000-${String(++k).padStart(12, '0')}`, category_id: m[1], name: m[2], description: m[3],
+    default_priority: m[4], requires_approval: m[5] === 'TRUE', popular: m[6] === 'TRUE', sort_order: Number(m[7]),
+    form_schema: JSON.parse(m[8].replace(/''/g, "'")), active: true,
+  }));
+const byName = (n) => allItems.find((i) => i.name === n);
+const catalog = { categories: CATS.map(([id, name, description, icon]) => ({
+  id, name, description, icon,
+  items: allItems.filter((i) => i.category_id === id).sort((a, b) => a.sort_order - b.sort_order)
+    .map(({ form_schema, default_priority, sort_order, active, ...rest }) => rest),
+})) };
+const APC = byName('APC'), BUNDLE = byName('Hardware-Bundle (mehrere Geräte)'), VM = byName('Virtuelle Maschine'),
+  PHONE = byName('Telefon bestellen (Softphone / Hardphone)');
 
 // ------------------------------------------------------------------ Tickets
 const P = PERSONAS;
@@ -71,7 +76,7 @@ function ticket(title, status, priority, cat, item, requester, assignee, created
   return {
     id: `aaaaaaaa-0000-4000-8000-${String(n).padStart(12, '0')}`, number: `SR-00${n}`, title, status,
     status_label: label, status_color: color, is_final: final, priority, category_id: cat,
-    category_name: catalog.categories.find((c) => c.id === cat).name, item_name: item,
+    category_name: CATS.find((c) => c[0] === cat)[1], item_name: item,
     requester_sub: requester.sub, requester_name: requester.name,
     assignee_sub: assignee?.sub ?? null, assignee_name: assignee?.name ?? null,
     response_due_at: inH(2), due_at: inH(30), created_at: ago(createdH), updated_at: ago(updatedH),
@@ -83,22 +88,22 @@ const lisa = { sub: 'u-lisa', name: 'Lisa Schneider' }, jonas = { sub: 'u-jonas'
   mira = { sub: 'u-mira', name: 'Mira Kaya' }, tom = { sub: 'u-tom', name: 'Tom Becker' };
 
 const annaTickets = [
-  ticket('Ersatz-Notebook für defektes Gerät', 'resolved', 'medium', 'hardware', 'Notebook anfordern', P.anna, P.uwe, 50, 1.5),
-  ticket('Zugriff auf Laufwerk Vertrieb/Angebote', 'waiting_for_user', 'medium', 'access', 'Gruppenmitgliedschaft / Share-Zugriff', P.anna, P.uwe, 26, 3),
-  ticket('Zweiter Monitor 27" für Homeoffice', 'waiting_for_approval', 'low', 'hardware', 'Monitor / Dockingstation', P.anna, P.uwe, 72, 20),
-  ticket('Installation Visio Professional', 'in_progress', 'medium', 'software', 'Software installieren', P.anna, P.uwe, 6, 2),
-  ticket('VPN bricht im Hotel-WLAN ab', 'new', 'high', 'general', 'Allgemeine Anfrage / Störung', P.anna, null, 0.4, 0.4),
-  ticket('Headset für Teams-Calls', 'closed', 'low', 'hardware', 'Zubehör', P.anna, P.uwe, 400, 380),
+  ticket('Ersatz-APC für defektes Gerät', 'resolved', 'medium', 'hardware', 'APC', P.anna, P.uwe, 50, 1.5),
+  ticket('Zugriff auf Laufwerk Vertrieb/Angebote', 'waiting_for_user', 'medium', 'access', 'Netzlaufwerk-Zugriff', P.anna, P.uwe, 26, 3),
+  ticket('Arbeitsplatz für neue Kollegin (Bundle)', 'waiting_for_approval', 'medium', 'hardware', 'Hardware-Bundle (mehrere Geräte)', P.anna, P.uwe, 72, 20),
+  ticket('Softphone mit Headset', 'in_progress', 'low', 'telephony', 'Telefon bestellen (Softphone / Hardphone)', P.anna, P.uwe, 6, 2),
+  ticket('VPN-Zugang für Außendienst', 'new', 'medium', 'access', 'VPN-Zugang', P.anna, null, 0.4, 0.4),
+  ticket('Zugriff Funktionspostfach vertrieb@', 'closed', 'low', 'access', 'Mail-Postfach-Zugriff', P.anna, P.uwe, 400, 380),
 ];
 const queue = [
   ticket('Drucker 3. OG druckt nur leere Seiten', 'new', 'critical', 'general', 'Allgemeine Anfrage / Störung', jonas, null, 0.3, 0.3),
+  ticket('Neues Benutzerkonto: M. Yilmaz (wie t.becker)', 'new', 'high', 'accounts', 'Neues Benutzerkonto', lisa, null, 1, 1),
+  ticket('VM für Build-Server (8 vCPU / 32 GB)', 'in_progress', 'high', 'vm', 'Virtuelle Maschine', mira, P.uwe, 9, 1, { overdue: true, due_at: ago(1) }),
+  ticket('SSL-Zertifikat intranet.example.com', 'waiting_for_approval', 'medium', 'certificates', 'SSL/TLS-Serverzertifikat', tom, P.uwe, 30, 5),
   annaTickets[4],
-  ticket('CAD-Workstation: Grafikkartentreiber', 'in_progress', 'high', 'software', 'Software installieren', mira, P.uwe, 9, 1, { overdue: true, due_at: ago(1) }),
-  ticket('Neue Mitarbeiterin: Notebook & Zugänge', 'waiting_for_approval', 'medium', 'hardware', 'Notebook anfordern', lisa, P.uwe, 30, 5),
   annaTickets[1],
-  ticket('Leserechte SAP-Rolle Controlling (befristet)', 'new', 'medium', 'access', 'Gruppenmitgliedschaft / Share-Zugriff', tom, null, 2, 2),
+  ticket('S/MIME-Zertifikat für einkauf@', 'new', 'low', 'certificates', 'E-Mail-Zertifikat (S/MIME)', jonas, null, 2, 2),
   annaTickets[3],
-  ticket('Docking-Station erkennt Monitor nicht', 'in_progress', 'low', 'hardware', 'Monitor / Dockingstation', lisa, P.alex, 48, 26),
 ];
 
 const SR_DETAIL = annaTickets[0];
@@ -108,12 +113,12 @@ function detail(t, persona, support) {
     : t.status === 'resolved' ? [['closed', 'Geschlossen'], ['in_progress', 'In Bearbeitung']] : [];
   const tt = support ? { ...t, status: 'in_progress', status_label: 'In Bearbeitung', status_color: 'tertiary', resolved_at: null } : t;
   return {
-    ticket: { ...tt, description: 'Display hat seit gestern einen Riss, Gerät startet nur noch sporadisch.',
-      form_schema: NOTEBOOK_SCHEMA, first_response_at: ago(47), anonymized: false, requester_email: support ? P.anna.email : undefined,
-      form_data: { model: 'standard-14', reason: 'replacement', oldAssetTag: 'NB-20431', costCenter: '4711', approverEmail: 'k.vogel@example.com', neededBy: new Date(now + 5 * 86400_000).toISOString().slice(0, 10), justification: 'Altgerät defekt (Displaybruch), tägliche Kundentermine.' } },
+    ticket: { ...tt, description: 'Gerät startet seit gestern nur noch sporadisch, Lüfter sehr laut.',
+      form_schema: APC.form_schema, first_response_at: ago(47), anonymized: false, requester_email: support ? P.anna.email : undefined,
+      form_data: { model: 'notebook-office', reason: 'replacement', oldAssetTag: 'APC-20431', costCenter: '4711', approverEmail: 'k.vogel@example.com', neededBy: new Date(now + 5 * 86400_000).toISOString().slice(0, 10), justification: 'Altgerät defekt, tägliche Kundentermine.' } },
     comments: [
       { id: 'c1', body: 'Danke für die Anfrage! Das Austauschgerät wird vorbereitet. Bitte das Altgerät inkl. Netzteil mitbringen.', internal: false, author_role: 'first-level', author_name: 'Uwe Helpdesk', created_at: ago(46), mine: persona === P.uwe },
-      ...(support ? [{ id: 'c2', body: 'Freigabe durch K. Vogel per Mail erteilt (Ticketnr. im Betreff), Gerät NB-31877 aus Lager reserviert.', internal: true, author_role: 'first-level', author_name: 'Uwe Helpdesk', created_at: ago(30), mine: true }] : []),
+      ...(support ? [{ id: 'c2', body: 'Freigabe durch K. Vogel per Mail erteilt (Ticketnr. im Betreff), Gerät APC-31877 aus Lager reserviert.', internal: true, author_role: 'first-level', author_name: 'Uwe Helpdesk', created_at: ago(30), mine: true }] : []),
       { id: 'c3', body: 'Super, kann ich das Gerät morgen ab 9 Uhr abholen?', internal: false, author_role: 'user', author_name: 'Anna Müller', created_at: ago(20), mine: persona === P.anna },
       { id: 'c4', body: 'Ihr Gerät ist vorbereitet und kann zu den Servicezeiten am IT-Service-Point abgeholt werden. Bitte Altgerät und Netzteil mitbringen.', internal: false, author_role: 'first-level', author_name: 'Uwe Helpdesk', created_at: ago(1.5), mine: persona === P.uwe },
     ],
@@ -159,7 +164,12 @@ function apiResponse(path, persona) {
   const p = path.replace(/\?.*$/, '');
   if (p === '/api/me') return persona;
   if (p === '/api/catalog') return catalog;
-  if (p.startsWith('/api/catalog/items/')) return { ...catalog.categories[0].items[0], category_name: 'Hardware', form_schema: NOTEBOOK_SCHEMA, default_priority: 'medium' };
+  if (p.startsWith('/api/catalog/items/')) {
+    const it = allItems.find((i) => p.endsWith(i.id)) ?? APC;
+    return { ...it, category_name: CATS.find((c) => c[0] === it.category_id)[1] };
+  }
+  if (p === '/api/admin/catalog-items') return allItems;
+  if (p === '/api/admin/categories') return CATS.map(([id, name, description, icon], i) => ({ id, name, description, icon, sort_order: (i + 1) * 10, active: true }));
   if (p === '/api/statuses') return statuses;
   if (p === '/api/tickets/summary') return { open: '5', waiting_for_me: '1', to_confirm: '1', closed: '1' };
   if (p === '/api/tickets') {
@@ -173,6 +183,7 @@ function apiResponse(path, persona) {
   if (p === '/api/support/agents') return [P.uwe, P.alex].map((a) => ({ sub: a.sub, display_name: a.name, email: a.email }));
   if (p === '/api/support/solutions') return [
     { id: 's1', category_id: 'hardware', title: 'Gerät bereit zur Abholung', body: '…' },
+    { id: 's3', category_id: 'hardware', title: 'Bundle ausgeliefert', body: '…' },
     { id: 's2', category_id: null, title: 'Neustart & Updates', body: '…' }];
   if (p === '/api/admin/workflow') return workflow;
   if (p === '/api/admin/audit') return audit;
@@ -237,42 +248,58 @@ async function shot(context, path, name, prepare) {
 
 const browser = await chromium.launch();
 try {
-  const annaLight = await newContext(browser, P.anna);
-  await shot(annaLight, '/', '01-startseite-hell');
-  await shot(annaLight, '/katalog', '03-katalog');
-  await shot(annaLight, `/anfrage/${catalog.categories[0].items[0].id}`, '04-anfrage-formular', async (page) => {
-    await page.fill('#f-title', 'Ersatz-Notebook für defektes Gerät');
-    await page.selectOption('#f-model', 'standard-14');
-    await page.selectOption('#f-reason', 'replacement');
-    await page.fill('#f-oldAssetTag', 'NB-20431');
-    await page.fill('#f-costCenter', '47A1');
-    await page.fill('#f-approverEmail', 'k.vogel@example.com');
-    await page.click('button[type=submit]');
+  const anna = await newContext(browser, P.anna, { dark: true });
+  await shot(anna, '/', '01-startseite-dunkel');
+  await shot(anna, '/katalog', '03-katalog');
+  await shot(anna, `/anfrage/${BUNDLE.id}`, '04-formular-bundle', async (page) => {
+    await page.fill('#f-title', 'Arbeitsplatz für neue Kollegin');
+    for (const [f, v] of [['pcCount', '1'], ['monitorCount', '2'], ['phoneCount', '1'], ['mouseCount', '1'], ['keyboardCount', '1'], ['webcamCount', '1']]) {
+      await page.fill(`#f-${f}`, v);
+    }
+    await page.fill('#f-location', 'Gebäude B, Raum 2.14');
+    await page.fill('#f-costCenter', '4711');
   });
-  await shot(annaLight, '/tickets?filter=all', '05-meine-tickets');
-  await shot(annaLight, `/tickets/${SR_DETAIL.id}`, '06-ticket-detail');
+  await shot(anna, `/anfrage/${VM.id}`, '05-formular-vm', async (page) => {
+    await page.fill('#f-title', 'Build-Server für Team Plattform');
+    await page.fill('#f-hostname', 'build-plattform-01');
+    await page.selectOption('#f-os', 'rhel-9');
+    await page.selectOption('#f-environment', 'test');
+    await page.fill('#f-vcpu', '8');
+    await page.fill('#f-ramGb', '32');
+    await page.fill('#f-diskGb', '120');
+    await page.fill('#f-dataDiskGb', '500');
+  });
+  await shot(anna, `/anfrage/${PHONE.id}`, '06-formular-telefonie', async (page) => {
+    await page.fill('#f-title', 'Tischtelefon für Empfang');
+    await page.selectOption('#f-phoneType', 'hardphone');
+    await page.selectOption('#f-hardphoneModel', 'desk-video');
+    await page.selectOption('#f-number', 'existing');
+    await page.fill('#f-existingNumber', '+49 30 1234-100');
+  });
+  await shot(anna, '/tickets?filter=all', '07-meine-tickets');
+  await shot(anna, `/tickets/${SR_DETAIL.id}`, '08-ticket-detail');
+  await anna.close();
+
+  const annaLight = await newContext(browser, P.anna);
+  await shot(annaLight, '/', '02-startseite-hell');
   await annaLight.close();
 
-  const annaDark = await newContext(browser, P.anna, { dark: true });
-  await shot(annaDark, '/', '02-startseite-dunkel');
-  await annaDark.close();
+  const uwe = await newContext(browser, P.uwe, { dark: true });
+  await shot(uwe, '/support', '09-support-queue');
+  await shot(uwe, `/support/tickets/${SR_DETAIL.id}`, '10-support-bearbeitung');
+  await uwe.close();
 
-  const uweDark = await newContext(browser, P.uwe, { dark: true });
-  await shot(uweDark, '/support', '07-support-queue');
-  await uweDark.close();
-
-  const uweLight = await newContext(browser, P.uwe);
-  await shot(uweLight, `/support/tickets/${SR_DETAIL.id}`, '08-support-bearbeitung');
-  await uweLight.close();
-
-  const alex = await newContext(browser, P.alex);
-  await shot(alex, '/admin/workflow', '09-admin-workflow');
-  await shot(alex, '/admin/audit', '10-admin-audit');
+  const alex = await newContext(browser, P.alex, { dark: true });
+  await shot(alex, '/admin/katalog', '11-admin-katalog', async (page) => {
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight * 0.35));
+  });
+  await shot(alex, '/admin/workflow', '12-admin-workflow');
+  await shot(alex, '/admin/audit', '13-admin-audit');
   await alex.close();
 
   const mobile = await newContext(browser, P.anna, { dark: true, mobile: true });
-  await shot(mobile, '/', '11-mobil-startseite');
-  await shot(mobile, `/tickets/${SR_DETAIL.id}`, '12-mobil-ticket');
+  await shot(mobile, '/', '14-mobil-startseite');
+  await shot(mobile, `/tickets/${SR_DETAIL.id}`, '15-mobil-ticket');
   await mobile.close();
 } finally {
   await browser.close();

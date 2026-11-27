@@ -34,6 +34,8 @@ const base = {
   label: z.string().min(1).max(120).transform(cleanLine),
   required: z.boolean().optional(),
   help: z.string().max(300).transform(cleanLine).optional(),
+  // Bedingtes Feld: nur sichtbar/gültig (und ggf. Pflicht), wenn ein anderes Feld einen bestimmten Wert hat
+  when: z.object({ field: z.string().regex(FIELD_NAME), equals: z.union([z.string().max(60), z.boolean()]) }).strict().optional(),
 };
 
 export const FieldDef = z.discriminatedUnion('type', [
@@ -48,11 +50,22 @@ export const FieldDef = z.discriminatedUnion('type', [
 export type FieldDef = z.infer<typeof FieldDef>;
 
 export const FormSchema = z
-  .object({ fields: z.array(FieldDef).max(30) })
+  .object({
+    fields: z.array(FieldDef).max(30),
+    // Mindestens eines dieser Felder muss ausgefüllt sein (z. B. Positionen eines Bundles)
+    requireOneOf: z.array(z.string().regex(FIELD_NAME)).min(2).max(30).optional(),
+  })
   .strict()
   .superRefine((schema, ctx) => {
     const seen = new Set<string>();
+    const names = new Set(schema.fields.map((f) => f.name));
+    for (const n of schema.requireOneOf ?? []) {
+      if (!names.has(n)) ctx.addIssue({ code: 'custom', message: `requireOneOf: unbekanntes Feld ${n}` });
+    }
     for (const f of schema.fields) {
+      if (f.when && (!names.has(f.when.field) || f.when.field === f.name)) {
+        ctx.addIssue({ code: 'custom', message: `when: ungültiges Bezugsfeld bei ${f.name}` });
+      }
       if (seen.has(f.name)) ctx.addIssue({ code: 'custom', message: `Feldname doppelt: ${f.name}` });
       seen.add(f.name);
       if (f.type === 'number' && f.min !== undefined && f.max !== undefined && f.min > f.max) {
@@ -110,18 +123,44 @@ function fieldValidator(f: FieldDef): z.ZodTypeAny {
       v = z.enum(f.options.map((o) => o.value) as [string, ...string[]]);
       break;
   }
+  // Bedingte Felder: Pflicht wird erst im Formular-Kontext geprüft (siehe buildFormValidator)
+  if (f.when) return v.optional();
   if (f.required) {
-    if (f.type === 'checkbox') return v;
+    if (f.type === 'checkbox') return z.literal(true, { errorMap: () => ({ message: `${f.label}: Bestätigung erforderlich` }) });
     return v.refine((x) => x !== '' && x !== undefined && x !== null, `${f.label} ist ein Pflichtfeld`);
   }
   return v.optional();
+}
+
+export function isFilled(v: unknown): boolean {
+  if (v === undefined || v === null || v === '' || v === false) return false;
+  if (typeof v === 'number') return v > 0;
+  return true;
 }
 
 /** Baut aus der (bereits geprüften) Formulardefinition einen strikten Validator. */
 export function buildFormValidator(schema: FormSchema) {
   const shape: Record<string, z.ZodTypeAny> = {};
   for (const f of schema.fields) shape[f.name] = fieldValidator(f);
-  return z.object(shape).strict();
+  return z
+    .object(shape)
+    .strict()
+    .transform((data, ctx) => {
+      const out: Record<string, unknown> = { ...data };
+      for (const f of schema.fields) {
+        if (!f.when) continue;
+        const active = out[f.when.field] === f.when.equals;
+        if (!active) {
+          delete out[f.name]; // Werte inaktiver Felder werden verworfen
+        } else if (f.required && !isFilled(out[f.name])) {
+          ctx.addIssue({ code: 'custom', path: [f.name], message: `${f.label} ist ein Pflichtfeld` });
+        }
+      }
+      if (schema.requireOneOf && !schema.requireOneOf.some((n) => isFilled(out[n]))) {
+        ctx.addIssue({ code: 'custom', path: [], message: 'Bitte mindestens eine Position angeben' });
+      }
+      return out;
+    });
 }
 
 export function parseFormData(schemaJson: unknown, data: unknown): Record<string, unknown> {

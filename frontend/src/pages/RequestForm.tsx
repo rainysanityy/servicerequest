@@ -30,7 +30,8 @@ export default function RequestForm() {
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
       const first = Object.keys(errs)[0]!;
-      document.getElementById(first === '__title' ? 'f-title' : `f-${first}`)?.focus();
+      const target = first === '__title' ? 'f-title' : first === '__oneOf' ? `f-${item.form_schema.requireOneOf?.[0] ?? ''}` : `f-${first}`;
+      document.getElementById(target)?.focus();
       return;
     }
     setBusy(true);
@@ -48,7 +49,7 @@ export default function RequestForm() {
       setSubmitError(err);
       if (err instanceof ApiError) {
         const fieldErrs: Record<string, string> = {};
-        for (const i of err.issues) fieldErrs[i.path.replace(/^formData\./, '')] = i.message;
+        for (const i of err.issues) fieldErrs[i.path.replace(/^formData\./, '') || '__oneOf'] = i.message;
         setErrors(fieldErrs);
       }
     } finally {
@@ -79,8 +80,13 @@ export default function RequestForm() {
             </div>
           </div>
 
+          {errors['__oneOf'] ? (
+            <div className="banner tone-error" role="alert"><Icon name="warning" />{errors['__oneOf']}</div>
+          ) : item.form_schema.requireOneOf ? (
+            <div className="banner tone-neutral"><Icon name="info" />Geben Sie bei mindestens einer Position eine Anzahl an.</div>
+          ) : null}
           <DynamicForm schema={item.form_schema} values={values} errors={errors}
-            onChange={(n, v) => { setValues((s) => ({ ...s, [n]: v })); setErrors((s) => { const c = { ...s }; delete c[n]; return c; }); }} />
+            onChange={(n, v) => { setValues((s) => ({ ...s, [n]: v })); setErrors((s) => { const c = { ...s }; delete c[n]; delete c['__oneOf']; return c; }); }} />
 
           <div className="field">
             <label htmlFor="f-desc">Weitere Hinweise (optional)</label>
