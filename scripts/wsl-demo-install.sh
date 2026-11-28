@@ -13,7 +13,7 @@
 #   - Docker im Root-Modus (moby-engine) statt Rootless – Container laufen
 #     trotzdem non-root, read-only, cap_drop ALL
 #   - Proxy direkt auf 443/80, Hostname "localhost", selbstsigniertes Zertifikat
-#   - Demo-Benutzer werden importiert
+#   - Demo-Benutzer und ca. 12 Monate fiktive Tickets werden importiert
 # =============================================================================
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -85,6 +85,9 @@ done
 say "Smoke-Test"
 PROXY_HTTPS_PORT=443 ./scripts/smoke-test.sh || echo "⚠ Smoke-Test meldet Fehler – Logs: ${DC[*]} logs --tail=100"
 
+say "Demo-Daten für Tickets und Statistiken laden"
+DEMO_DC="${DC[*]}" ./scripts/load-demo-data.sh
+
 # --- 5. Zusammenfassung ------------------------------------------------------
 kc_user=$(grep -E '^KEYCLOAK_ADMIN_USER=' .env | cut -d= -f2)
 cat <<EOF
@@ -100,6 +103,8 @@ cat <<EOF
 
  Keycloak-Admin-Konsole: https://localhost/auth/admin/
    Benutzer: ${kc_user}   Passwort: steht in .env (KEYCLOAK_ADMIN_PASSWORD)
+
+ Statistik mit Demo-Daten (ca. 2.400 Tickets): https://localhost/statistik
 
  Neue Konten per Selbstregistrierung brauchen eine @example.local-Adresse
  (ALLOWED_EMAIL_DOMAINS in .env).

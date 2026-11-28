@@ -2,35 +2,69 @@
   "realm": "itportal",
   "users": [
     {
+      "id": "a1000000-0000-4000-8000-000000000001",
       "username": "anna.mueller",
       "email": "anna.mueller@example.local",
       "firstName": "Anna",
       "lastName": "Müller",
       "enabled": true,
       "emailVerified": true,
-      "attributes": { "department": ["Vertrieb"], "costCenter": ["4711"] },
-      "credentials": [{ "type": "password", "value": "Demo!User-2026", "temporary": true }],
-      "groups": ["/Mitarbeitende"]
+      "attributes": {
+        "department": [
+          "Vertrieb"
+        ],
+        "costCenter": [
+          "4711"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo!User-2026",
+          "temporary": true
+        }
+      ],
+      "groups": [
+        "/Mitarbeitende"
+      ]
     },
     {
+      "id": "a1000000-0000-4000-8000-000000000002",
       "username": "uwe.helpdesk",
       "email": "uwe.helpdesk@example.local",
       "firstName": "Uwe",
       "lastName": "Helpdesk",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [{ "type": "password", "value": "Demo!Uhd-2026x", "temporary": true }],
-      "groups": ["/IT-UHD"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo!Uhd-2026x",
+          "temporary": true
+        }
+      ],
+      "groups": [
+        "/IT-UHD"
+      ]
     },
     {
+      "id": "a1000000-0000-4000-8000-000000000003",
       "username": "alex.admin",
       "email": "alex.admin@example.local",
       "firstName": "Alex",
       "lastName": "Admin",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [{ "type": "password", "value": "Demo!Admin-2026", "temporary": true }],
-      "groups": ["/IT-Portal-Admins"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo!Admin-2026",
+          "temporary": true
+        }
+      ],
+      "groups": [
+        "/IT-Portal-Admins"
+      ]
     }
   ]
 }

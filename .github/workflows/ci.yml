@@ -89,6 +89,15 @@ jobs:
           psql -v ON_ERROR_STOP=1 -c "SELECT * FROM apply_retention(30, 30, 7)"
           if psql -c "DELETE FROM audit_log" 2>/dev/null; then echo "audit_log darf nicht löschbar sein"; exit 1; fi
           if psql -c "DROP TABLE tickets" 2>/dev/null; then echo "App-Rolle darf kein DDL"; exit 1; fi
+      - name: Demo-Daten laden (idempotent) und Hash-Kette prüfen
+        run: |
+          psql -v ON_ERROR_STOP=1 -q -f scripts/demo-data.sql
+          psql -v ON_ERROR_STOP=1 -q -f scripts/demo-data.sql
+          test "$(psql -tAc "SELECT count(*) FROM portal.tickets")" -gt 1500
+          psql -v ON_ERROR_STOP=1 -tAc "
+            SELECT count(*) FROM (
+              SELECT id, row_hash, prev_hash, lag(row_hash) OVER (ORDER BY id) AS lag_hash FROM portal.audit_log) x
+            WHERE prev_hash <> coalesce(lag_hash, 'GENESIS')" | grep -qx 0
 
   keycloak:
     name: Keycloak – Realm-Import, Registrierung, Admin-API
