@@ -138,6 +138,10 @@ Alle Container laufen **non-root**, mit **read-only Root-Dateisystem**, `cap_dro
 
 ## Schnellstart
 
+> **Nur ausprobieren (Windows + WSL):** In einer Fedora-WSL genügt
+> `git clone https://github.com/rainysanityy/servicerequest.git && cd servicerequest && ./scripts/wsl-demo-install.sh`
+> – danach im Windows-Browser `https://localhost` öffnen. Ohne Härtung, nur für Demo/Test.
+
 > Voraussetzungen: Fedora Server ≥ 41, ein Admin-Konto mit SSH-Schlüssel, DNS-Name und TLS-Zertifikat (für Tests kann ein selbstsigniertes erzeugt werden).
 
 ```bash
