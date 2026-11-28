@@ -20,7 +20,7 @@ RUN mkdir -p /out/tls && chmod 0750 /out/tls
 FROM gcr.io/distroless/nodejs22-debian12:nonroot
 LABEL org.opencontainers.image.title="srp-backend" \
       org.opencontainers.image.description="IT-Service-Request-Portal API" \
-      org.opencontainers.image.version="1.0.0"
+      org.opencontainers.image.version="1.1.0"
 WORKDIR /app
 ENV NODE_ENV=production NODE_OPTIONS="--disable-proto=delete"
 COPY --from=build /app/package.json ./package.json

@@ -1,7 +1,7 @@
 ---
 title: "Datenschutzkonzept"
 subtitle: "IT-Service-Request-Portal – Verarbeitung personenbezogener Daten nach DSGVO/BDSG"
-version: "1.0"
+version: "1.1"
 date: "November 2026"
 classification: "Intern"
 audience: "Datenschutzbeauftragte/r, Service Owner, IT-Leitung, Betriebsrat"
@@ -227,3 +227,4 @@ Technische Unterstützung: Das Audit-Log ermöglicht die Feststellung, wer wann 
 | Version | Datum | Änderung | Freigabe |
 |---|---|---|---|
 | 1.0 | November 2026 | Erstfassung | DSB (ausstehend) |
+| 1.1 | November 2026 | Keine Änderung an der Verarbeitung personenbezogener Daten (Zertifikatstausch, Betriebsskripte) | DSB (ausstehend) |

@@ -1,7 +1,7 @@
 ---
 title: "Benutzerhandbuch"
 subtitle: "IT-Service-Request-Portal – für Mitarbeitende"
-version: "1.0"
+version: "1.1"
 date: "November 2026"
 classification: "Intern"
 audience: "Alle Mitarbeitenden"
@@ -337,7 +337,7 @@ Diese Bereiche sind nur für Mitarbeitende mit entsprechender Rolle sichtbar. Di
 Formularangaben können nach dem Absenden nicht geändert werden. Ergänzen Sie Korrekturen als Nachricht im Ticket.
 
 **Kann ich Dateien anhängen?**
-Aus Sicherheitsgründen ist in Version 1.0 kein Datei-Upload vorgesehen. Beschreiben Sie Fehler bitte als Text; der Support meldet sich bei Bedarf.
+Aus Sicherheitsgründen ist kein Datei-Upload an Tickets vorgesehen. Beschreiben Sie Fehler bitte als Text; der Support meldet sich bei Bedarf.
 
 **Wie lange dauert die Bearbeitung?**
 Die Fristen hängen von der Priorität ab und werden in der Ticketübersicht unter *Reaktion bis* und *Lösung bis* angezeigt.

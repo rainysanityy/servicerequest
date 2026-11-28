@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 FROM docker.io/nginxinc/nginx-unprivileged:1.27-alpine
-LABEL org.opencontainers.image.title="srp-proxy" org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.title="srp-proxy" org.opencontainers.image.version="1.1.0"
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY snippets/ /etc/nginx/snippets/
 # envsubst-Templates (vom Entry-Point nach /etc/nginx/conf.d gerendert; conf.d ist tmpfs)

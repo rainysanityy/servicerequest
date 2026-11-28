@@ -33,7 +33,7 @@ services:
     <<: *hardening
     build:
       context: ./proxy
-    image: srp/proxy:${PORTAL_VERSION:-1.0.0}
+    image: srp/proxy:${PORTAL_VERSION:-1.1.0}
     ports:
       # Rootless: hohe Ports; firewalld leitet 443->8443 und 80->8080 weiter
       - "${PROXY_HTTPS_PORT:-8443}:8443"
@@ -80,7 +80,7 @@ services:
     <<: *hardening
     build:
       context: ./frontend
-    image: srp/frontend:${PORTAL_VERSION:-1.0.0}
+    image: srp/frontend:${PORTAL_VERSION:-1.1.0}
     tmpfs:
       - /tmp:size=32m,mode=1777
       - /var/cache/nginx:size=32m,uid=101
@@ -102,7 +102,7 @@ services:
     <<: *hardening
     build:
       context: ./backend
-    image: srp/backend:${PORTAL_VERSION:-1.0.0}
+    image: srp/backend:${PORTAL_VERSION:-1.1.0}
     environment:
       NODE_ENV: production
       TZ: Europe/Berlin
@@ -161,7 +161,7 @@ services:
   migrate:
     <<: *hardening
     restart: "no"
-    image: srp/backend:${PORTAL_VERSION:-1.0.0}
+    image: srp/backend:${PORTAL_VERSION:-1.1.0}
     command: ["dist/migrate.js"]
     environment:
       NODE_ENV: production
@@ -234,7 +234,7 @@ services:
       context: ./keycloak
       args:
         KEYCLOAK_VERSION: ${KEYCLOAK_VERSION:-26.4}
-    image: srp/keycloak:${PORTAL_VERSION:-1.0.0}
+    image: srp/keycloak:${PORTAL_VERSION:-1.1.0}
     # vorgebautes (kc.sh build) Image -> --optimized, read-only rootfs möglich
     command: ["start", "--optimized", "--import-realm"]
     environment:

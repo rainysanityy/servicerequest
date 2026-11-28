@@ -65,6 +65,10 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder
     <td width="50%"><img src="docs/screenshots/25-statistik-mitarbeitende.png" alt="Statistik Mitarbeitende"><br><sub><b>Statistik</b> – allgemeine Ansicht für Mitarbeitende</sub></td>
   </tr>
   <tr>
+    <td width="50%"><img src="docs/screenshots/26-admin-zertifikat.png" alt="Admin: TLS-Zertifikat"><br><sub><b>Zertifikat</b> – .p12 hochladen, prüfen, ohne Unterbrechung aktivieren</sub></td>
+    <td width="50%"><img src="docs/screenshots/13-admin-audit.png" alt="Admin: Audit-Log"><br><sub><b>Audit-Log</b> – Filter und Integritätsprüfung (Hash-Kette)</sub></td>
+  </tr>
+  <tr>
     <td width="50%"><img src="docs/screenshots/16-admin-benutzer-rollen.png" alt="Admin: Benutzer und Rollen"><br><sub><b>Benutzer & Rollen</b> – Mitarbeitende / UHD / Admin vergeben, sperren</sub></td>
     <td width="50%"><img src="docs/screenshots/17-registrierung-dunkel.png" alt="Selbstregistrierung in Keycloak"><br><sub><b>Selbstregistrierung</b> – eigenes Keycloak-Theme, ohne Mailserver</sub></td>
   </tr>
@@ -73,10 +77,6 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder
     <td width="50%"><img src="docs/screenshots/20-login-hell.png" alt="Keycloak-Login im Light Mode"><br><sub><b>Anmeldung</b> – Light Mode (folgt der Systemeinstellung)</sub></td>
   </tr>
 </table>
-
-<p align="center">
-  <img src="docs/screenshots/13-admin-audit.png" alt="Admin: Audit-Log" width="700"><br><sub><b>Audit-Log</b> mit Integritätsprüfung (Hash-Kette)</sub>
-</p>
 
 <p align="center">
   <img src="docs/screenshots/14-mobil-startseite.png" alt="Mobile Startseite" width="260">&nbsp;&nbsp;
@@ -119,6 +119,8 @@ Self-Service-Portal für IT-Anfragen in Unternehmen – **Hardware (einzeln oder
 - Status und Workflow-Matrix je Rolle, SLA-Zeiten, Standardlösungen
 - **Benutzer & Rollen**: Konten suchen, Rollen **Mitarbeitende / UHD / Admin** vergeben, sperren/entsperren – mit Begründung im Audit-Log, sofortigem Sitzungsende bei Rechteentzug und Schutz vor Selbst- bzw. Letzt-Admin-Herabstufung
 - **Statistik komplett** inkl. Top-Katalogeinträge, Abschlüsse, Benutzer-/Rollenentwicklung, verweigerte Zugriffe und Audit-Aktionen (nur aggregiert, keine Auswertung einzelner Bearbeitender)
+- **TLS-Zertifikat austauschen**: `.p12`/`.pfx` hochladen, Prüfung (Passwort, Schlüsselpaar, Hostname, Laufzeit, Schlüsselstärke nach TR-02102, EKU, Kette), Aktivierung ohne Unterbrechung mit automatischem Rückfall, Ablauf-Ampel, Audit
+- **Zwei-Faktor-Pflicht** (TOTP) für UHD und Admins, erzwungen in Keycloak
 - Audit-Log mit Filter und Integritätsprüfung (Hash-Kette), Systemsicht
 
 ## Architektur
@@ -181,7 +183,11 @@ cd /srv/srp/app
 | `scripts/prod-setup.sh` | geführte Produktiv-Einrichtung (wiederholbar) |
 | `scripts/prod-preflight.sh` | Go-Live-Prüfung: Platzhalter, Zertifikat, Demo-Reste, SELinux, Rootless, Backup, Issuer |
 | `scripts/keycloak-setup.sh` | Keycloak: 2FA-Pflicht für Rolle `first-level` (UHD + Admin), erstes Portal-Admin-Konto |
+| `scripts/update.sh` | Update auf neue Version: Prüfung, Backup, Übernahme, Build, Neustart, Smoke-Test |
 | `scripts/smoke-test.sh` | Funktions- und Sicherheitsprüfung nach Deployment/Update |
+
+Der komplette Ablauf – `prod-setup.sh` mit Test-PKI, Go-Live-Prüfung, Sperre der Admin-Konsole, Zertifikatstausch
+inkl. fehlerhaftem Zertifikat, Backup, Restore und `update.sh` – läuft in der CI bei jeder Änderung (Job *E2E*).
 
 ## Rollen
 
@@ -261,7 +267,8 @@ Die CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) führt bei jedem
 |---|---|
 | Status | `docker compose ps` |
 | Logs | `docker compose logs -f backend proxy` |
-| Update | `git pull && docker compose build --pull && docker compose up -d` (Migrationen laufen automatisch) |
+| Update | `./scripts/update.sh v1.2.0` (Backup, Build, Neustart, Smoke-Test; Migrationen laufen automatisch) |
+| Zertifikat erneuern | *Administration → Zertifikat* → `.p12` hochladen |
 | Backup | `./scripts/backup.sh` (täglich per `srp-backup.timer`) |
 | Restore | `./scripts/restore.sh /srv/backup/srp/<zeitstempel> ~/age-identity.txt` |
 | Härtungsnachweis | `sudo fedora-hardening/scripts/verify.sh` |

@@ -12,7 +12,7 @@ RUN npm run build
 
 # -------- Stage 2: Runtime (nginx unprivileged, UID 101) ------------------
 FROM docker.io/nginxinc/nginx-unprivileged:1.27-alpine
-LABEL org.opencontainers.image.title="srp-frontend" org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.title="srp-frontend" org.opencontainers.image.version="1.1.0"
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 USER 101

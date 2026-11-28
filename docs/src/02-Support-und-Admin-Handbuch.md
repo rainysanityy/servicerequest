@@ -1,7 +1,7 @@
 ---
 title: "Support- & Admin-Handbuch"
 subtitle: "Ticketbearbeitung im First-Level-Bereich und Administration des Portals"
-version: "1.0"
+version: "1.1"
 date: "November 2026"
 classification: "Intern"
 audience: "First-Level-Support (UHD), Portal-Administration"
@@ -353,6 +353,31 @@ Vergeben Sie die Rolle **Admin** nur nach Freigabe (Ticket) und nur an Personen 
 * Unplausible oder missbräuchliche Konten (fremder Name zur Adresse, Doppelkonten) sperren Sie unter *Benutzer & Rollen* bzw. löschen sie in der Keycloak-Konsole.
 * **Passwort vergessen:** Nach Identitätsprüfung (z. B. Rückruf über Telefonverzeichnis) in Keycloak unter *Users → Benutzer → Credentials → Reset password* ein temporäres Passwort setzen.
 
+## TLS-Zertifikat austauschen
+
+Unter *Administration → Zertifikat* tauschen Sie das HTTPS-Zertifikat des Portals ohne Serverzugriff und ohne Unterbrechung aus – z. B. bei der jährlichen Erneuerung.
+
+**Links** sehen Sie das aktuell ausgelieferte Zertifikat: Name, alternative Namen, Aussteller, Laufzeit mit Ampel (*noch n Tage*; gelb unter 30, rot unter 14 Tagen), Schlüsseltyp und SHA-256-Fingerabdruck sowie die Quelle (*Server-Datei* `proxy/certs` oder *hochgeladen*).
+
+**So tauschen Sie das Zertifikat:**
+
+1. PKCS#12-Datei (`.p12`/`.pfx`) mit Serverzertifikat, privatem Schlüssel **und Zwischenzertifikaten** bereitstellen (siehe unten).
+2. Datei wählen, Passwort der Datei und Begründung/Change-Nummer eingeben → **Prüfen**.
+3. Das Portal prüft: Passwort, Schlüssel passt zum Zertifikat, Zertifikat gilt für den Portal-Hostnamen, Laufzeit, Schlüsselstärke (RSA ≥ 2048, empfohlen ≥ 3072; ECDSA P-256/384/521), Verwendungszweck „TLS-Server“. Fehler (rot) verhindern die Aktivierung, Warnungen (gelb) – z. B. selbstsigniert, fehlende Zwischenzertifikate, Ablauf in < 30 Tagen – sollten Sie bewerten.
+4. **Zertifikat aktivieren** → bestätigen. Der Proxy übernimmt es innerhalb von ca. 15 Sekunden; die Seite zeigt danach den neuen Fingerabdruck. Ist das Zertifikat trotz Prüfung für den Proxy unbrauchbar, bleibt das bisherige aktiv (Hinweis im Proxy-Log).
+5. **Rückweg:** *Server-Zertifikat wiederherstellen* löscht das hochgeladene Zertifikat; der Proxy verwendet wieder `proxy/certs/tls.crt` vom Server.
+
+![Zertifikat prüfen und aktivieren](img/admin-zertifikat.png)
+
+| Werkzeug | Export |
+|---|---|
+| OpenSSL | `openssl pkcs12 -export -in server.crt -inkey server.key -certfile kette.pem -out portal.p12` (OpenSSL 3 verschlüsselt standardmäßig mit AES-256) |
+| Windows (certlm.msc) | Zertifikat → *Alle Aufgaben → Exportieren* → „Ja, privaten Schlüssel exportieren“ → „Alle Zertifikate im Zertifizierungspfad einbeziehen“ → Verschlüsselung **AES256-SHA256** |
+
+::: warning
+Dateien mit veralteter Verschlüsselung (RC2/RC4, z. B. aus sehr alten Windows-Versionen oder `openssl -legacy`) werden abgelehnt – neu mit AES exportieren. Das Passwort der Datei wird nicht gespeichert, der private Schlüssel nur im geschützten Volume `tls`; beides erscheint in keinem Protokoll. Das Audit-Log enthält Aussteller, Seriennummer, Ablaufdatum und Fingerabdruck (`admin.tls.install`, `admin.tls.remove`).
+:::
+
 ## Audit-Log
 
 Das Audit-Log protokolliert sicherheits- und prüfungsrelevante Ereignisse, u. a.:
@@ -362,6 +387,7 @@ Das Audit-Log protokolliert sicherheits- und prüfungsrelevante Ereignisse, u. a
 | `ticket.create`, `ticket.status`, `ticket.assign`, `ticket.priority`, `ticket.comment`, `ticket.solution` | Ticketbearbeitung |
 | `admin.catalog.*`, `admin.category.upsert`, `admin.workflow.update`, `admin.status.update`, `admin.sla.update`, `admin.solution.*` | Administration |
 | `admin.user.role`, `admin.user.enable`, `admin.user.disable` | Rollenvergabe, Sperren/Entsperren |
+| `admin.tls.install`, `admin.tls.remove` | TLS-Zertifikat hochgeladen/aktiviert (auch fehlgeschlagene Versuche), wiederhergestellt |
 | `authz.denied`, `auth.denied` | Zugriff ohne erforderliche Rolle, nicht erlaubte E-Mail-Domain |
 | `admin.audit.verify`, `system.retention` | Integritätsprüfung, Löschlauf |
 

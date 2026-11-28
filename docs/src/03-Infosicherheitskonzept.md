@@ -1,7 +1,7 @@
 ---
 title: "Informationssicherheitskonzept"
 subtitle: "IT-Service-Request-Portal – Schutzbedarf, Risiken, Maßnahmen (BSI IT-Grundschutz / NIST)"
-version: "1.0"
+version: "1.1"
 date: "November 2026"
 classification: "Vertraulich – nur für den internen Gebrauch"
 audience: "ISB, IT-Leitung, Betrieb, Entwicklung, Revision"
@@ -135,6 +135,7 @@ Bewertung nach BSI 200-3: Eintrittshäufigkeit (selten / mittel / häufig / sehr
 | R20 | G 0.36 Identitätsdiebstahl / G 0.30 Unberechtigte Nutzung | Missbrauch der Selbstregistrierung: ohne Mailserver keine E-Mail-Bestätigung – Registrierung mit fremder Firmenadresse oder Massenkonten möglich | Domain-Prüfung im Backend, nur Rolle `user` (kein Zugriff auf fremde Tickets), Rate Limits auf Registrierungsendpunkt, wöchentliche Sichtung neuer Konten, Sperren im Admin-Bereich, Audit; empfohlen mittelfristig: Anbindung an AD/LDAP statt Selbstregistrierung oder Mailserver für Bestätigung | mittel (akzeptiert durch ISB) |
 | R21 | G 0.32 Missbrauch von Berechtigungen | Kompromittierung des Service-Accounts `portal-admin-api` (manage-users) | Secret nur im Backend (internes Netz), Client-Credentials ohne Browser-Flows, Token 120 s, nur Realm `itportal` (kein Master), Backend nutzt nur Gruppen der drei Portal-Rollen/Sperren, Audit jeder Änderung, Secret-Rotation | gering |
 | R22 | G 0.31 Fehlerhafte Administration | Aussperren durch Entzug der letzten Admin-Rechte | Serverseitige Schutzregeln (keine Selbst-Herabstufung, letzter Admin geschützt), Notfall-Admin in Keycloak | gering |
+| R23 | G 0.19 Offenlegung schützenswerter Informationen | Privater TLS-Schlüssel über die Upload-Funktion abgegriffen oder fehlerhaftes Zertifikat legt das Portal lahm | Nur Rolle `admin` (MFA-Pflicht), Upload-Endpunkt mit eigenem Rate Limit und Größenlimit, Parser ohne Fremdbibliothek mit Grenzen für Größe/Tiefe/Iterationen, Ablage im Docker-Volume `tls` (nur Backend schreibt, nur Proxy liest; Verzeichnis 0750), Passwort wird nicht gespeichert, Prüfung vor Aktivierung, Proxy übernimmt nur nach erfolgreichem `nginx -t`, Rückfall auf Server-Zertifikat, Audit, verschlüsselte Sicherung im Backup | gering |
 | R19 | G 0.18 Fehlplanung | VMs in falschem Netzsegment (z. B. DMZ) oder ohne Backup/Monitoring | Pflichtangaben Netzsegment, Verantwortliche/r, Laufzeit; Prüfung durch Betrieb vor Bereitstellung | gering |
 
 **Risikobehandlung:** Die mittleren Restrisiken R2, R5, R16 und R20 werden durch organisatorische Maßnahmen (Kap. 7) weiter gesenkt und vom ISB im Rahmen der Freigabe akzeptiert.
@@ -156,6 +157,7 @@ Bewertung nach BSI 200-3: Eintrittshäufigkeit (selten / mittel / häufig / sehr
 | Objektberechtigung | Nutzer sehen nur eigene Tickets; fremde IDs liefern 404 | AC-3 |
 | Workflow-Durchsetzung | Statusübergänge aus DB-Tabelle je Rolle, serverseitig geprüft, verweigerte Versuche auditiert | AC-3, AU-2 |
 | Admin-Pfade | `/auth/admin` und Master-Realm nur aus Admin-Netz | AC-17, SC-7 |
+| TLS-Zertifikatstausch | PKCS#12-Upload in der Admin-Oberfläche: Prüfung (Schlüsselpaar, Hostname, Laufzeit, Schlüsselstärke nach TR-02102, EKU), Aktivierung nur nach Bestätigung, Austausch ohne Unterbrechung mit Rückfallebene, Audit | SC-12, SC-17, CM-3 |
 | Selbstregistrierung | Keycloak-Registrierung ohne Mailserver (keine E-Mail-Bestätigung, kein Passwort-Reset per Mail), Standardgruppe `/Mitarbeitende`, Zugriff nur mit Adresse aus `ALLOWED_EMAIL_DOMAINS` (Backend), keine Vergabe privilegierter Rollen, Sichtung neuer Konten | AC-2, IA-8 |
 | Statistik | `GET /api/stats` liefert je Rolle nur den zulässigen Umfang (user: allgemein + eigene Tickets; first-level: + Support-Betrieb; admin: + Katalog/Benutzer/Sicherheit); Rate Limit 60/min | AC-3, AC-6 |
 | Rollenverwaltung | Admin-Oberfläche über Service-Account `portal-admin-api` (Client Credentials, Realm-beschränkt); sofortiges Beenden von Sitzungen bei Rechteentzug; Schutz vor Selbst-/Letzt-Admin-Herabstufung; Begründungspflicht im Audit | AC-2, AC-2(4), AC-6 |

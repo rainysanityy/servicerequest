@@ -1,7 +1,7 @@
 ---
 title: "Betriebskonzept"
 subtitle: "IT-Service-Request-Portal – Architektur, Inbetriebnahme, Betrieb, Wartung und Eskalation"
-version: "1.0"
+version: "1.1"
 date: "November 2026"
 classification: "Intern"
 audience: "IT-Betrieb, IAM-Team, Service Owner, Entwicklung"
@@ -323,14 +323,13 @@ Restore-Tests werden **quartalsweise** in einer Testumgebung durchgeführt und p
 
 ```bash
 cd /srv/srp/app
-./scripts/backup.sh                         # Sicherung vor Änderung
-git fetch --tags && git checkout v1.1.0      # bzw. Release-Paket entpacken
-docker compose build --pull
-docker compose up -d                         # migrate läuft vor backend
-docker compose ps && ./scripts/smoke-test.sh
+./scripts/update.sh v1.2.0           # Git-Klon: Tag auschecken
+./scripts/update.sh /pfad/entpackt   # oder: entpacktes Release-Paket übernehmen
 ```
 
-**Rollback:** vorheriges Tag auschecken, `docker compose up -d`. Enthält das neue Release Datenbankmigrationen, ist ein Rollback nur per Restore der vorherigen Sicherung möglich – daher Migrationen grundsätzlich abwärtskompatibel gestalten (expand/contract).
+`update.sh` führt nacheinander aus: Konfigurationsprüfung (`prod-preflight.sh --static`), verschlüsseltes Backup, Übernahme der neuen Version (`.env`, `secrets/`, `proxy/certs/`, Support-Kontakt und hochgeladenes Zertifikat bleiben erhalten), `docker compose build --pull`, `up -d` (Migrationen laufen vor dem Backend), Warten auf Bereitschaft, Smoke-Test und Go-Live-Prüfung. Der gesamte Ablauf wird in der CI bei jeder Änderung gegen eine frische Installation getestet.
+
+**Rollback:** `./scripts/update.sh <vorheriges Tag>`. Enthält das neue Release Datenbankmigrationen, ist ein Rollback nur per Restore der vorherigen Sicherung möglich – daher Migrationen grundsätzlich abwärtskompatibel gestalten (expand/contract).
 
 ## Change-Management
 
@@ -342,7 +341,7 @@ docker compose ps && ./scripts/smoke-test.sh
 
 | Objekt | Laufzeit / Rotation | Vorgehen |
 |---|---|---|
-| TLS-Zertifikat | gemäß PKI (≤ 1 Jahr) | neue Dateien in `proxy/certs/`, `docker compose restart proxy` |
+| TLS-Zertifikat | gemäß PKI (≤ 1 Jahr) | **bevorzugt:** Admin-Oberfläche → *Zertifikat* → `.p12` hochladen (Prüfung, Austausch ohne Unterbrechung, Audit). Alternativ neue Dateien in `proxy/certs/` und `docker compose restart proxy` – ein hochgeladenes Zertifikat hat Vorrang. Ablauf überwachen (Ampel in der Oberfläche, `prod-preflight.sh`). |
 | Keycloak-Signaturschlüssel | jährlich | *Realm settings → Keys → Add provider (rsa-generated)*, alten Schlüssel nach Ablauf der Token-Laufzeit deaktivieren |
 | DB-Passwörter | jährlich / bei Personalwechsel | siehe Informationssicherheitskonzept, Kap. „Secret-Rotation“ |
 | `KEYCLOAK_ADMIN_API_SECRET` | jährlich / bei Verdacht | Keycloak: *Clients → portal-admin-api → Credentials → Regenerate*, Wert in `.env` übernehmen, `docker compose up -d backend` |
@@ -428,3 +427,4 @@ Die ausführliche, abzuzeichnende Fassung liegt im Repository unter `docs/GO-LIV
 | Version | Datum | Änderung |
 |---|---|---|
 | 1.0 | November 2026 | Erstfassung |
+| 1.1 | November 2026 | Geführte Produktiv-Einrichtung (`prod-setup.sh`, `prod-preflight.sh`, `update.sh`), Zwei-Faktor-Pflicht per Skript, Zertifikatstausch über die Admin-Oberfläche, WSL2-Hinweise |

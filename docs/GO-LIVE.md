@@ -19,7 +19,8 @@ gehört zur Freigabedokumentation (Betriebskonzept, Anhang B).
 |---|---|---|
 | ☐ | `./scripts/prod-setup.sh` vollständig durchgelaufen | Ausgabe |
 | ☐ | `./scripts/prod-preflight.sh` ohne Fehler, Warnungen bewertet | Ausgabe archivieren |
-| ☐ | Zertifikat der Unternehmens-PKI, SAN = Hostname, Kette vollständig, Ablauf überwacht | `openssl x509 -in proxy/certs/tls.crt -noout -text` |
+| ☐ | Zertifikat der Unternehmens-PKI, SAN = Hostname, Kette vollständig, Ablauf überwacht | *Admin → Zertifikat* (Ampel) bzw. `openssl x509 -in proxy/certs/tls.crt -noout -text` |
+| ☐ | Zertifikatstausch einmal geübt (.p12 hochladen, aktivieren, wiederherstellen) | Audit `admin.tls.install` |
 | ☐ | TLS-Test (z. B. `testssl.sh https://<host>`): nur TLS 1.2/1.3, keine schwachen Suiten | Bericht |
 | ☐ | `package-lock.json` versioniert, Image-Scan (Trivy in der CI) ohne kritische Befunde | CI-Lauf |
 | ☐ | Keine Demo-Benutzer, keine Demo-Daten (`prod-preflight.sh` prüft beides) | Ausgabe |

@@ -4,7 +4,12 @@ Alle nennenswerten Änderungen an diesem Projekt. Format angelehnt an [Keep a Ch
 
 ## [Unveröffentlicht]
 
+## [1.1.0] – 2026-11-28
+
 ### Hinzugefügt
+- Administration → *Zertifikat*: TLS-Serverzertifikat als PKCS#12 (`.p12`/`.pfx`) hochladen; Prüfung (Passwort/MAC, Schlüsselpaar, Hostname, Laufzeit, Schlüsselstärke, EKU, Kette), Aktivierung nach Bestätigung, Austausch ohne Unterbrechung (Proxy prüft mit `nginx -t`, Rückfall auf bisheriges Zertifikat), Wiederherstellung des Server-Zertifikats, Ablauf-Ampel, Audit `admin.tls.*`; eigener PKCS#12-Parser ohne Fremdbibliothek (AES/PBES2, 3DES, MAC SHA-1/2), Unit-Tests mit OpenSSL-Testdateien
+- `scripts/update.sh`: Update mit Prüfung, Backup, Build, Neustart, Smoke-Test; Backup/Restore sichern auch das hochgeladene Zertifikat
+- CI-Job *E2E*: vollständige Produktivinstallation mit Test-PKI, Go-Live-Prüfung, Sperre der Admin-Konsole, Zertifikatstausch inkl. Fehlerfall, Backup/Restore, Update
 - Produktiv-Einrichtung: `scripts/prod-setup.sh` (geführt oder unbeaufsichtigt), `scripts/prod-preflight.sh` (Go-Live-Prüfung), `docs/GO-LIVE.md`
 - Zwei-Faktor-Pflicht (TOTP) für UHD und Admins über Browser-Flow `browser-mfa` (`scripts/keycloak-setup.sh`), erstes Portal-Admin-Konto per Skript; CI testet den Login-Ablauf
 - Härtung unter WSL2: `harden.sh`/`verify.sh` erkennen WSL, setzen alles Machbare um und weisen SELinux/auditd als N/A aus; WSL-Demo läuft nach der Härtung rootless unter `srp`

@@ -68,4 +68,4 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env, requireOidc 
   return { env, dbPassword: readSecret(env) };
 }
 
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.0';
