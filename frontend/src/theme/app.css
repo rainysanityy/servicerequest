@@ -463,3 +463,18 @@ line.viz-base { stroke: var(--viz-base); stroke-width: 1; }
 :root[data-theme='dark'] .viz-seg-part.o4, :root[data-theme='dark'] .viz-seg-part.o3 { color: #0b0b0b; }
 .viz-legend-values { margin-top: 12px; }
 @media (forced-colors: active) { .viz-hbar, .viz-seg-part, .viz-key { forced-color-adjust: none; border: 1px solid CanvasText; } }
+
+/* ---- Admin: TLS-Zertifikat ------------------------------------------------ */
+.tone-info { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.break { overflow-wrap: anywhere; word-break: break-all; }
+.issues { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.issues li { display: flex; gap: 8px; align-items: flex-start; padding: 10px 14px; border-radius: var(--md-sys-shape-corner-medium); }
+.issues li svg { flex: none; margin-top: 2px; }
+details > summary { cursor: pointer; color: var(--md-sys-color-primary); font-weight: 500; }
+details[open] > summary { margin-bottom: 8px; }
+.card input[type='file'].input { padding: 10px 12px; }
+.card input[type='file'].input::file-selector-button {
+  margin-right: 12px; padding: 6px 14px; border: 0; border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container);
+  font: inherit; font-weight: 500; cursor: pointer;
+}

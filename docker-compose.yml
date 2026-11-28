@@ -47,6 +47,8 @@ services:
       # Einzeldateien statt Verzeichnis: das Verzeichnis bleibt 0700 (auch rootless lesbar für nginx)
       - ./proxy/certs/tls.crt:/etc/nginx/certs/tls.crt:ro,Z
       - ./proxy/certs/tls.key:/etc/nginx/certs/tls.key:ro,Z
+      # per Admin-Oberfläche hochgeladenes Zertifikat (hat Vorrang, siehe proxy/entrypoint/35-tls.sh)
+      - tls:/etc/nginx/uploaded:ro
     tmpfs:
       - /tmp:size=64m,mode=1777
       - /var/cache/nginx:size=64m,uid=101
@@ -126,10 +128,15 @@ services:
       RETENTION_TICKET_DAYS: ${RETENTION_TICKET_DAYS:-1095}
       RETENTION_AUDIT_DAYS: ${RETENTION_AUDIT_DAYS:-365}
       RETENTION_IP_DAYS: ${RETENTION_IP_DAYS:-90}
+      TLS_DIR: /tls
+      PROXY_TLS_ADDR: proxy:8443
     secrets:
       - portal_app_db_password
     tmpfs:
       - /tmp:size=32m,mode=1777
+    volumes:
+      # Ablage für per Admin-Oberfläche hochgeladene TLS-Zertifikate (.p12)
+      - tls:/tls
     networks:
       - app
       - data
@@ -308,6 +315,7 @@ networks:
 volumes:
   portal_db_data:
   keycloak_db_data:
+  tls:
 
 secrets:
   postgres_superuser_password:

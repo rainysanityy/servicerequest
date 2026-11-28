@@ -231,7 +231,7 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
           shellcheck -S warning scripts/*.sh fedora-hardening/scripts/*.sh db/init/*.sh
-        continue-on-error: true
+          shellcheck -s sh -S warning proxy/entrypoint/*.sh
       - name: JSON prüfen
         run: for f in keycloak/import/*.json keycloak/demo-users/*.json frontend/public/config.json fedora-hardening/files/docker/daemon.json; do jq empty "$f"; done
 
@@ -253,3 +253,114 @@ jobs:
             docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest \
               image --scanners vuln --severity CRITICAL,HIGH --ignore-unfixed --exit-code 0 --no-progress srp/$c:ci
           done
+
+  e2e:
+    name: E2E – Produktiv-Installation, Zertifikatstausch, Backup/Restore
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, keycloak]
+    timeout-minutes: 45
+    env:
+      H: portal.ci.test
+      P: "8443"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Werkzeuge, Test-PKI (Root → Issuing → Server), age-Schlüssel
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq age jq
+          mkdir -p /tmp/pki && cd /tmp/pki
+          openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:secp384r1 -nodes -keyout ca.key -out ca.crt -days 30 -subj "/CN=CI Root CA/O=CI" 2>/dev/null
+          openssl req -newkey ec -pkeyopt ec_paramgen_curve:secp384r1 -nodes -keyout int.key -out int.csr -subj "/CN=CI Issuing CA/O=CI" 2>/dev/null
+          printf 'basicConstraints=critical,CA:true,pathlen:0\nkeyUsage=critical,keyCertSign,cRLSign\n' > int.ext
+          openssl x509 -req -in int.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out int.crt -days 30 -sha384 -extfile int.ext 2>/dev/null
+          printf 'subjectAltName=DNS:%s\nkeyUsage=critical,digitalSignature\nextendedKeyUsage=serverAuth\nbasicConstraints=CA:false\n' "$H" > leaf.ext
+          for n in a b; do
+            openssl req -newkey ec -pkeyopt ec_paramgen_curve:secp384r1 -nodes -keyout $n.key -out $n.csr -subj "/CN=$H/O=CI $n" 2>/dev/null
+            openssl x509 -req -in $n.csr -CA int.crt -CAkey int.key -CAcreateserial -out $n.crt -days 20 -sha384 -extfile leaf.ext 2>/dev/null
+            cat $n.crt int.crt > $n.fullchain.crt
+          done
+          openssl pkcs12 -export -in b.crt -inkey b.key -certfile int.crt -out b.p12 -passout pass:CiP12pass 2>/dev/null
+          age-keygen -o /tmp/backup.key 2>/dev/null
+          age-keygen -y /tmp/backup.key > /tmp/backup.pub
+          sudo install -d -o "$USER" -m 0700 /srv/backup/srp
+      - name: prod-setup.sh (unbeaufsichtigt, wie auf dem Server)
+        run: |
+          NONINTERACTIVE=1 PORTAL_HOSTNAME=$H ALLOWED_EMAIL_DOMAINS=firma.de ADMIN_ALLOW_CIDR=10.10.0.0/24 \
+          BACKUP_AGE_RECIPIENT="$(cat /tmp/backup.pub)" CERT_FILE=/tmp/pki/a.fullchain.crt KEY_FILE=/tmp/pki/a.key \
+          FIRST_ADMIN_USERNAME=max.admin FIRST_ADMIN_EMAIL=max.admin@firma.de FIRST_ADMIN_FIRSTNAME=Max FIRST_ADMIN_LASTNAME=Admin \
+          SUPPORT_PHONE="+49 30 9999-0" SUPPORT_HOURS="Mo–Fr 7–18 Uhr" \
+            ./scripts/prod-setup.sh 2>&1 | tee /tmp/setup.log
+          grep -q 'Zwei-Faktor-Pflicht aktiv' /tmp/setup.log
+          grep -q 'Portal-Admin "max.admin"' /tmp/setup.log
+          grep -q 'Temporäres Passwort' /tmp/setup.log
+      - name: Go-Live-Prüfung (nur Plattform-Warnungen erlaubt)
+        run: ./scripts/prod-preflight.sh
+      - name: Abnahme über den Proxy
+        run: |
+          C=(curl -sk --resolve "$H:$P:127.0.0.1")
+          test "$("${C[@]}" -o /dev/null -w '%{http_code}' "https://$H:$P/")" = 200
+          test "$("${C[@]}" -o /dev/null -w '%{http_code}' "https://$H:$P/api/me")" = 401
+          test "$("${C[@]}" "https://$H:$P/config.json" | jq -r .supportPhone)" = "+49 30 9999-0"
+          # Admin-Konsole nur aus dem Admin-Netz (Runner ist nicht im Netz 10.10.0.0/24)
+          test "$("${C[@]}" -o /dev/null -w '%{http_code}' "https://$H:$P/auth/admin/")" = 403
+          test "$("${C[@]}" -o /dev/null -w '%{http_code}' "https://$H:$P/auth/realms/master/.well-known/openid-configuration")" = 403
+          # Zertifikatskette wird vollständig ausgeliefert und ist gegen die Test-Root gültig
+          echo | openssl s_client -connect 127.0.0.1:$P -servername $H -CAfile /tmp/pki/ca.crt 2>/dev/null | grep -q 'Verify return code: 0'
+          # Upload-Endpunkt existiert und ist geschützt
+          test "$("${C[@]}" -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' "https://$H:$P/api/admin/tls")" = 401
+      - name: Zertifikatstausch über das Volume (wie nach Upload in der Admin-Oberfläche)
+        run: |
+          fp() { echo | openssl s_client -connect 127.0.0.1:$P -servername $H 2>/dev/null | openssl x509 -noout -fingerprint -sha256 | cut -d= -f2; }
+          want=$(openssl x509 -in /tmp/pki/b.crt -noout -fingerprint -sha256 | cut -d= -f2)
+          before=$(fp); test "$before" != "$want"
+          cid=$(docker compose ps -q backend)
+          # p12 mit dem Backend-Parser prüfen und als PEM ablegen – exakt der Code der Admin-API
+          docker compose exec -T -e P12B64="$(base64 -w0 /tmp/pki/b.p12)" -e H="$H" backend /nodejs/bin/node --input-type=module -e "
+            const { parsePkcs12, checkServerCertificate } = await import('/app/dist/pkcs12.js');
+            const { writeFileSync, renameSync } = await import('node:fs');
+            const r = checkServerCertificate(parsePkcs12(Buffer.from(process.env.P12B64, 'base64'), 'CiP12pass'), process.env.H);
+            if (!r.ok) { console.error(r.errors); process.exit(1); }
+            writeFileSync('/tls/.k', r.keyPem, { mode: 0o644 }); renameSync('/tls/.k', '/tls/tls.key');
+            writeFileSync('/tls/.c', r.certPem, { mode: 0o644 }); renameSync('/tls/.c', '/tls/tls.crt');
+            writeFileSync('/tls/meta.json', JSON.stringify({ fingerprint256: r.info.fingerprint256, uploadedAt: new Date().toISOString(), uploadedBy: 'ci', info: r.info }));
+            console.log('abgelegt', r.info.fingerprint256);"
+          for i in $(seq 1 20); do [ "$(fp)" = "$want" ] && break; sleep 3; done
+          test "$(fp)" = "$want"
+          docker compose logs proxy | grep 'tls: Zertifikat gewechselt'
+          # Ungültiges Zertifikat (passt nicht zum Schlüssel) darf den Proxy nicht stören
+          docker compose exec -T backend /nodejs/bin/node --input-type=module -e "
+            const fs = await import('node:fs');
+            fs.writeFileSync('/tls/tls.crt', fs.readFileSync('/dev/stdin'));
+            fs.writeFileSync('/tls/meta.json', JSON.stringify({ fingerprint256: 'kaputt' }));" < /tmp/pki/a.crt
+          sleep 25
+          test "$(fp)" = "$want"
+          docker compose logs proxy | grep -q 'ist ungültig (nginx -t)'
+          # Neustart: Proxy startet trotz kaputtem Upload mit dem Server-Zertifikat
+          docker compose restart proxy
+          for i in $(seq 1 30); do curl -sk --resolve "$H:$P:127.0.0.1" -o /dev/null "https://$H:$P/healthz" && break; sleep 2; done
+          test "$(fp)" = "$before"
+      - name: Backup, Wiederherstellung, Update-Skript
+        run: |
+          set -a; . ./.env; set +a
+          PW=$(cat secrets/postgres_superuser_password)
+          psql() { docker compose exec -T -e PGPASSWORD="$PW" db psql -U postgres -d portal -tAc "$1"; }
+          ./scripts/backup.sh
+          B=$(ls -d /srv/backup/srp/*/ | tail -1)
+          ls -l "$B"; test -s "$B/portal.dump.age"; test -s "$B/keycloak.dump.age"; test -s "$B/tls.tar.age"
+          (cd "$B" && sha256sum -c SHA256SUMS)
+          age -d -i /tmp/backup.key "$B/portal.dump.age" | head -c 5 | grep -q PGDMP
+          # Änderung nach dem Backup → muss durch Restore verschwinden
+          psql "INSERT INTO portal.categories (id, name) VALUES ('ci-marker', 'CI-Marker')"
+          test "$(psql "SELECT count(*) FROM portal.categories WHERE id='ci-marker'")" = 1
+          echo RESTORE | ./scripts/restore.sh "$B" /tmp/backup.key
+          for i in $(seq 1 60); do curl -sk --resolve "$H:$P:127.0.0.1" -o /dev/null -w '%{http_code}' "https://$H:$P/auth/realms/itportal/.well-known/openid-configuration" | grep -q 200 && break; sleep 5; done
+          test "$(psql "SELECT count(*) FROM portal.categories WHERE id='ci-marker'")" = 0
+          PROXY_HTTPS_PORT=$P ./scripts/smoke-test.sh
+          # Audit-Hash-Kette nach Restore intakt
+          test "$(psql "SELECT count(*) FROM (SELECT prev_hash, lag(row_hash) OVER (ORDER BY id) AS l FROM portal.audit_log) x WHERE prev_hash <> coalesce(l,'GENESIS')")" = 0
+          # Update aus Verzeichnis (gleiche Version) – Ablauf inkl. Backup, Build, Smoke-Test
+          git config --global --add safe.directory "$PWD"
+          cp -r "$PWD" /tmp/src && ./scripts/update.sh /tmp/src
+      - name: Logs bei Fehler
+        if: failure()
+        run: docker compose ps -a; docker compose logs --tail=150
+

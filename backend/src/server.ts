@@ -19,6 +19,7 @@ const app = await buildApp({
   publicOrigin: env.PUBLIC_ORIGIN!,
   logLevel: env.LOG_LEVEL,
   rateLimitMax: env.RATE_LIMIT_MAX,
+  tls: { dir: env.TLS_DIR, proxyAddr: env.PROXY_TLS_ADDR },
   auth: {
     issuer: env.OIDC_ISSUER!,
     audience: env.OIDC_AUDIENCE,

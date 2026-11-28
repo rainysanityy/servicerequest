@@ -31,6 +31,13 @@ echo "→ Sichere Portal-Datenbank"
 dump db "${PORTAL_DB_NAME:-portal}" postgres
 echo "→ Sichere Keycloak-Datenbank"
 dump keycloak-db keycloak keycloak
+echo "→ Sichere hochgeladenes TLS-Zertifikat (Volume tls, falls vorhanden)"
+cid="$(docker compose ps -q backend)"
+if [[ -n "$cid" ]] && docker cp "${cid}:/tls/." - 2>/dev/null | age -r "$BACKUP_AGE_RECIPIENT" -o "${DEST}/tls.tar.age"; then
+  :
+else
+  rm -f "${DEST}/tls.tar.age"; echo "  (übersprungen)"
+fi
 echo "→ Sichere Konfiguration (ohne Klartext-Secrets)"
 tar -C . -czf - docker-compose.yml keycloak/import proxy/templates proxy/nginx.conf \
   | age -r "$BACKUP_AGE_RECIPIENT" -o "${DEST}/config.tar.gz.age"

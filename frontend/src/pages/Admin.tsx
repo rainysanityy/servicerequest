@@ -6,6 +6,7 @@ import { Icon } from '../components/Icon';
 import { Dialog, EmptyState, ErrorBanner, ListSkeleton, Pagination, StatusChip, useApi, useSnackbar } from '../components/ui';
 import { fmtDateTime, PRIORITY_LABEL, ROLE_LABEL } from '../util/format';
 import { useAuth } from '../auth/AuthProvider';
+import { CertificateAdmin } from './AdminCertificate';
 
 /* =============================================================== Hilfen */
 function useSaver() {
@@ -572,6 +573,7 @@ const TABS = [
   { to: '/admin/sla', label: 'SLA', icon: 'schedule' },
   { to: '/admin/loesungen', label: 'Standardlösungen', icon: 'lightbulb' },
   { to: '/admin/rollen', label: 'Benutzer & Rollen', icon: 'group' },
+  { to: '/admin/zertifikat', label: 'Zertifikat', icon: 'lock' },
   { to: '/admin/audit', label: 'Audit-Log', icon: 'verified' },
 ];
 
@@ -581,7 +583,7 @@ export default function Admin() {
       <div className="page-head">
         <div>
           <h1 className="display-s">Administration</h1>
-          <p className="muted body-l">Katalog, Workflows, SLA, Benutzer & Rollen und Audit – alle Änderungen werden revisionssicher protokolliert.</p>
+          <p className="muted body-l">Katalog, Workflows, SLA, Benutzer & Rollen, Zertifikat und Audit – alle Änderungen werden revisionssicher protokolliert.</p>
         </div>
       </div>
       <nav className="tabs" aria-label="Admin-Bereiche">
@@ -594,6 +596,7 @@ export default function Admin() {
         <Route path="sla" element={<SlaAdmin />} />
         <Route path="loesungen" element={<SolutionsAdmin />} />
         <Route path="rollen" element={<UsersAdmin />} />
+        <Route path="zertifikat" element={<CertificateAdmin />} />
         <Route path="audit" element={<AuditAdmin />} />
       </Routes>
     </>

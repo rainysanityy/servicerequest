@@ -11,6 +11,8 @@ COPY tsconfig.json ./
 COPY src ./src
 COPY test ./test
 RUN npm run build && npm test && npm prune --omit=dev
+# Ablage für hochgeladene TLS-Zertifikate (Volume "tls"): Backend schreibt, Proxy (Gruppe 101) liest
+RUN mkdir -p /out/tls && chmod 0750 /out/tls
 
 # -----------------------------------------------------------------------------
 # Stage 2: Runtime – distroless (keine Shell, kein Paketmanager), non-root
@@ -25,6 +27,7 @@ COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY migrations ./migrations
+COPY --from=build --chown=65532:101 /out/tls /tls
 USER 65532:65532
 EXPOSE 3000
 CMD ["dist/server.js"]

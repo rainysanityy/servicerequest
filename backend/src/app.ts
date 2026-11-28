@@ -13,6 +13,7 @@ import { adminRoutes } from './routes/admin.js';
 import { userRoutes } from './routes/users.js';
 import { statsRoutes } from './routes/stats.js';
 import type { KeycloakAdmin } from './keycloakAdmin.js';
+import { tlsRoutes } from './routes/tls.js';
 
 export interface BuildOptions {
   pool: pg.Pool;
@@ -21,6 +22,7 @@ export interface BuildOptions {
   logLevel?: string;
   rateLimitMax?: number;
   kc?: KeycloakAdmin | null;
+  tls?: { dir: string; proxyAddr: string };
 }
 
 const REQUEST_ID = /^[A-Za-z0-9-]{8,64}$/;
@@ -103,6 +105,11 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
   await app.register(adminRoutes, { pool: opts.pool });
   await app.register(statsRoutes, { pool: opts.pool });
   await app.register(userRoutes, { pool: opts.pool, kc: opts.kc ?? null });
+  let tlsHost: string | null = null;
+  try { tlsHost = opts.publicOrigin ? new URL(opts.publicOrigin).hostname : null; } catch { tlsHost = null; }
+  await app.register(tlsRoutes, {
+    pool: opts.pool, hostname: tlsHost, dir: opts.tls?.dir ?? '/tls', proxyAddr: opts.tls?.proxyAddr ?? 'proxy:8443',
+  });
 
   // --- Einheitliche Fehlerbehandlung, keine internen Details nach außen ----
   app.setErrorHandler((err, req, reply) => {

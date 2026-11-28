@@ -191,7 +191,7 @@ function statsFixture(persona) {
 }
 
 // ------------------------------------------------------------------ API-Router
-function apiResponse(path, persona) {
+function apiResponse(path, persona, method = "GET") {
   const p = path.replace(/\?.*$/, '');
   if (p === '/api/me') return persona;
   if (p === '/api/catalog') return catalog;
@@ -218,6 +218,23 @@ function apiResponse(path, persona) {
     { id: 's2', category_id: null, title: 'Neustart & Updates', body: '…' }];
   if (p === '/api/admin/workflow') return workflow;
   if (p === '/api/admin/users/status') return { enabled: true };
+  if (p === '/api/admin/tls') {
+    const day = 86_400_000;
+    const cert = (cnName, issuer, days, fp, chain) => ({
+      subject: `CN=${cnName}, O=Firma GmbH`, issuer, subjectAltName: `DNS:${cnName}`, serialNumber: '4F1A09C2',
+      validFrom: new Date(Date.now() - (365 - days) * day).toISOString(), validTo: new Date(Date.now() + days * day).toISOString(),
+      daysRemaining: days, fingerprint256: fp, key: 'ECDSA P-384', selfSigned: false, chain,
+    });
+    const fpOld = '3A:91:5C:0E:7B:22:D4:18:9F:60:AB:CD:01:23:45:67:89:AB:CD:EF:10:32:54:76:98:BA:DC:FE:11:22:33:44';
+    const fpNew = 'C7:04:E2:58:1B:9D:33:7F:A0:16:5E:C4:92:08:6B:D1:4E:77:20:F3:8C:59:A1:0B:66:3D:E5:29:B7:40:12:FE';
+    const issuer = 'CN=Firma Issuing CA 02, O=Firma GmbH';
+    if (method === 'POST') return {
+      ok: true, installed: false, errors: [], warnings: [],
+      info: cert('servicedesk.firma.de', issuer, 397, fpNew, [{ subject: issuer, issuer: 'CN=Firma Root CA, O=Firma GmbH', validTo: new Date(Date.now() + 1500 * day).toISOString() }]),
+    };
+    return { hostname: 'servicedesk.firma.de', enabled: true, uploaded: null, activeSource: 'server',
+      active: cert('servicedesk.firma.de', issuer, 21, fpOld, []) };
+  }
   if (p === '/api/stats') return statsFixture(persona);
   if (p === '/api/admin/roles') return {
     expectedRoles: [
@@ -281,7 +298,7 @@ async function newContext(browser, persona, { dark = false, mobile = false } = {
   });
   await context.route('**/api/**', (route) => {
     const u = new URL(route.request().url());
-    return route.fulfill({ json: apiResponse(u.pathname + u.search, persona) });
+    return route.fulfill({ json: apiResponse(u.pathname + u.search, persona, route.request().method()) });
   });
   return context;
 }
@@ -363,6 +380,13 @@ try {
   await shot(alex, '/admin/workflow', '12-admin-workflow');
   await shot(alex, '/admin/audit', '13-admin-audit');
   await shot(alex, '/admin/rollen', '16-admin-benutzer-rollen');
+  await shot(alex, '/admin/zertifikat', '26-admin-zertifikat', async (page) => {
+    await page.setInputFiles('#p12-file', { name: 'servicedesk.p12', mimeType: 'application/x-pkcs12', buffer: Buffer.from('MIIDemo-nur-Screenshot') });
+    await page.fill('#p12-pw', 'geheim-geheim');
+    await page.fill('#p12-reason', 'CHG-2026-118 Zertifikatserneuerung');
+    await page.getByRole('button', { name: 'Prüfen' }).click();
+    await page.waitForSelector('text=Prüfung bestanden');
+  });
   await shot(alex, '/statistik', '22-statistik-admin');
   await shot(alex, '/statistik', '23-statistik-support', async (page) => {
     await page.evaluate(() => { const h = [...document.querySelectorAll('h2')].find((e) => e.textContent?.includes('Support-Betrieb')); h?.scrollIntoView(); window.scrollBy(0, -80); });

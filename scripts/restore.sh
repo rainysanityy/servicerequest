@@ -25,6 +25,12 @@ restore() { # $1=service $2=db $3=user
 restore db "${PORTAL_DB_NAME:-portal}" postgres
 restore keycloak-db keycloak keycloak
 
+# Hochgeladenes TLS-Zertifikat zurückspielen (falls gesichert)
+if [[ -f "${SRC}/tls.tar.age" ]]; then
+  cid="$(docker compose ps -aq backend)"
+  age -d -i "$KEY" "${SRC}/tls.tar.age" | docker cp -a - "${cid}:/tls" && echo "✓ TLS-Zertifikat wiederhergestellt"
+fi
+
 # Rechte der App-Rolle nach dem Restore sicherstellen
 docker compose run --rm migrate
 docker compose up -d

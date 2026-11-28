@@ -32,6 +32,9 @@ const EnvSchema = z.object({
   KEYCLOAK_REALM: z.string().regex(/^[a-z0-9-]{1,64}$/).default('itportal'),
   KEYCLOAK_ADMIN_CLIENT_ID: z.string().min(1).default('portal-admin-api'),
   KEYCLOAK_ADMIN_CLIENT_SECRET: z.string().optional(),
+  // TLS-Zertifikat per Admin-Oberfläche (Volume "tls", vom Proxy gelesen)
+  TLS_DIR: z.string().min(1).default('/tls'),
+  PROXY_TLS_ADDR: z.string().regex(/^[a-z0-9.-]+:\d{2,5}$/).default('proxy:8443'),
   // Kommagetrennte E-Mail-Domains für Mitarbeitende (Selbstregistrierung). Leer = keine Einschränkung.
   ALLOWED_EMAIL_DOMAINS: z.string().default('').transform((v) =>
     v.split(',').map((d) => d.trim().toLowerCase()).filter((d) => /^[a-z0-9.-]+\.[a-z]{2,}$/.test(d))),
