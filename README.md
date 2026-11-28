@@ -171,7 +171,7 @@ docker compose ps
 ./scripts/smoke-test.sh
 ```
 
-Danach `https://<PORTAL_HOSTNAME>/` öffnen. Demo-Konten (nur nach `load-demo-users.sh`): `anna.mueller` (Mitarbeitende), `uwe.helpdesk` (First-Level), `alex.admin` (Admin) – Initialpasswörter in [`keycloak/demo-users/`](keycloak/demo-users/), Passwortwechsel beim ersten Login, Support/Admin richten TOTP ein.
+Danach `https://<PORTAL_HOSTNAME>/` öffnen. Demo-Konten (nur nach `load-demo-users.sh`): `anna.mueller` (Mitarbeitende), `uwe.helpdesk` (First-Level), `alex.admin` (Admin) – Initialpasswörter in [`keycloak/demo-users/`](keycloak/demo-users/), Passwortwechsel beim ersten Login; die Demo-Konten haben keine 2FA-Pflicht (in Produktion für Support/Admin TOTP als Pflichtaktion setzen).
 
 > **Reproduzierbare Builds:** Einmalig `npm install` in `frontend/` und `backend/` ausführen und die erzeugten `package-lock.json` committen. Die Dockerfiles und die CI verwenden dann automatisch `npm ci`.
 

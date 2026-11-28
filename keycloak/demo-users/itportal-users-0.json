@@ -20,7 +20,6 @@
       "enabled": true,
       "emailVerified": true,
       "credentials": [{ "type": "password", "value": "Demo!Uhd-2026x", "temporary": true }],
-      "requiredActions": ["CONFIGURE_TOTP"],
       "groups": ["/IT-UHD"]
     },
     {
@@ -31,7 +30,6 @@
       "enabled": true,
       "emailVerified": true,
       "credentials": [{ "type": "password", "value": "Demo!Admin-2026", "temporary": true }],
-      "requiredActions": ["CONFIGURE_TOTP"],
       "groups": ["/IT-Portal-Admins"]
     }
   ]
