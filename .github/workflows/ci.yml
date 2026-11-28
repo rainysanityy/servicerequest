@@ -174,6 +174,43 @@ jobs:
             "$KC/realms/itportal/protocol/openid-connect/token" | jq -r .access_token)
           code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$KC/admin/realms/master/users")
           test "$code" = 401 -o "$code" = 403
+      - name: MFA-Pflicht und erstes Admin-Konto (scripts/keycloak-setup.mjs, zweimal = idempotent)
+        run: |
+          export KC_URL=$KC KC_ADMIN_USER=bootstrap KC_ADMIN_PASSWORD=bootstrap
+          FIRST_ADMIN_USERNAME=ci.portaladmin FIRST_ADMIN_EMAIL=ci.portaladmin@example.com node scripts/keycloak-setup.mjs
+          FIRST_ADMIN_USERNAME=ci.portaladmin FIRST_ADMIN_EMAIL=ci.portaladmin@example.com node scripts/keycloak-setup.mjs
+          ADM=$(curl -sf -d grant_type=password -d client_id=admin-cli -d username=bootstrap -d password=bootstrap \
+            "$KC/realms/master/protocol/openid-connect/token" | jq -r .access_token)
+          A="$KC/admin/realms/itportal"; H="Authorization: Bearer $ADM"
+          curl -sf -H "$H" "$A" | jq -e '.browserFlow == "browser-mfa"' >/dev/null
+          curl -sf -H "$H" "$A/authentication/flows/browser-mfa/executions" | tee /tmp/flow.json | jq -r '.[] | "\(.level) \(.requirement) \(.displayName)"'
+          test "$(jq '[.[] | select(.displayName == "browser-mfa MFA-Pflicht")] | length' /tmp/flow.json)" = 1
+          test "$(jq '[.[] | select(.providerId == "conditional-user-role")] | length' /tmp/flow.json)" = 2
+          ID=$(curl -sf -H "$H" "$A/users?username=ci.portaladmin&exact=true" | jq -r '.[0].id')
+          curl -sf -H "$H" "$A/users/$ID/groups" | jq -e 'map(.path) | index("/IT-Portal-Admins")' >/dev/null
+          # Testkonten: normaler Nutzer und UHD (ohne eingerichtetes OTP)
+          for u in ci.mfa.user ci.mfa.uhd; do
+            curl -sf -H "$H" -H 'Content-Type: application/json' -X POST "$A/users" -d "{\"username\":\"$u\",\"email\":\"$u@example.com\",\"emailVerified\":true,\"firstName\":\"CI\",\"lastName\":\"Test\",\"enabled\":true,\"credentials\":[{\"type\":\"password\",\"value\":\"Ci-Test-Pass-2026!\",\"temporary\":false}]}"
+          done
+          UHDG=$(curl -sf -H "$H" "$A/group-by-path/IT-UHD" | jq -r .id)
+          UID2=$(curl -sf -H "$H" "$A/users?username=ci.mfa.uhd&exact=true" | jq -r '.[0].id')
+          curl -sf -H "$H" -X PUT "$A/users/$UID2/groups/$UHDG"
+      - name: Login-Ablauf – Nutzer ohne 2FA, UHD muss TOTP einrichten
+        run: |
+          CH=E9Melhoe2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM
+          login() {
+            jar=$(mktemp)
+            U="$KC/realms/itportal/protocol/openid-connect/auth?client_id=portal-frontend&response_type=code&scope=openid&redirect_uri=https%3A%2F%2Flocalhost%2F&state=ci&code_challenge=$CH&code_challenge_method=S256"
+            action=$(curl -s -c "$jar" -b "$jar" "$U" | tr '\n' ' ' | grep -o 'id="kc-form-login"[^>]*action="[^"]*"' | sed 's/.*action="//; s/"$//; s/&amp;/\&/g')
+            test -n "$action" || { echo "Login-Formular nicht gefunden"; return 1; }
+            curl -s -c "$jar" -b "$jar" -o /tmp/after.html -w '%{http_code} %{redirect_url}' \
+              --data-urlencode "username=$1" --data-urlencode "password=Ci-Test-Pass-2026!" -d credentialId= "$action"
+          }
+          r=$(login ci.mfa.user); echo "Nutzer: $r"
+          [[ "$r" == 302\ https://localhost/* && "$r" == *code=* ]] || { head -c 1500 /tmp/after.html; exit 1; }
+          r=$(login ci.mfa.uhd); echo "UHD: $r"
+          [[ "$r" == 200* ]] && grep -qi 'totp' /tmp/after.html || { head -c 1500 /tmp/after.html; exit 1; }
+          echo "MFA-Pflicht greift nur für privilegierte Konten"
       - name: Logs bei Fehler
         if: failure()
         run: docker logs kc | tail -120
