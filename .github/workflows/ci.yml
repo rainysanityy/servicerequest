@@ -209,7 +209,9 @@ jobs:
           r=$(login ci.mfa.user); echo "Nutzer: $r"
           [[ "$r" == 302\ https://localhost/* && "$r" == *code=* ]] || { head -c 1500 /tmp/after.html; exit 1; }
           r=$(login ci.mfa.uhd); echo "UHD: $r"
-          [[ "$r" == 200* ]] && grep -qi 'totp' /tmp/after.html || { head -c 1500 /tmp/after.html; exit 1; }
+          # Keycloak leitet zur Pflichtaktion "TOTP einrichten" weiter (kein Code für die Anwendung)
+          [[ "$r" == *required-action*CONFIGURE_TOTP* || ( "$r" == 200* && $(grep -ci totp /tmp/after.html) -gt 0 ) ]] \
+            || { head -c 1500 /tmp/after.html; exit 1; }
           echo "MFA-Pflicht greift nur für privilegierte Konten"
       - name: Logs bei Fehler
         if: failure()

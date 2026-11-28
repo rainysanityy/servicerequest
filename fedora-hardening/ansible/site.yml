@@ -240,6 +240,17 @@
       ansible.builtin.lineinfile: { path: "{{ item }}", regexp: "^{{ srp_user }}:", line: "{{ srp_user }}:200000:65536" }
       loop: [/etc/subuid, /etc/subgid]
       tags: [docker]
+    - name: cgroup-Delegation für Rootless-Container (Ressourcenlimits)
+      ansible.builtin.copy:
+        src: "{{ files_dir }}/systemd/user-delegate.conf"
+        dest: /etc/systemd/system/user@.service.d/delegate.conf
+        mode: "0644"
+      register: srp_delegate
+      tags: [docker]
+    - name: systemd neu laden (Delegation)
+      ansible.builtin.systemd: { daemon_reload: true }
+      when: srp_delegate.changed
+      tags: [docker]
     - name: Verzeichnisse
       ansible.builtin.file: { path: "{{ item.p }}", state: directory, owner: "{{ srp_user }}", group: "{{ srp_user }}", mode: "{{ item.m }}" }
       loop:

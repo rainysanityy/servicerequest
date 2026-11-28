@@ -14,11 +14,21 @@
 #     INSTALL_DOCKER   yes|no – Docker CE rootless installieren (Default: yes)
 #     NTP_SERVERS      Leerzeichen-getrennt (Default: aus files/misc/chrony-sources.conf)
 #     SKIP_SSH         yes – SSH-Härtung überspringen (z. B. bei fehlenden Keys)
+#
+#  WSL2 (Fedora unter Windows) wird erkannt: alles, was der WSL-Kernel kann, wird
+#  wie auf einem echten Server umgesetzt. Nicht möglich sind SELinux und auditd
+#  (im WSL-Kernel nicht enthalten) – verify.sh weist diese als "N/A" aus.
+#  Zusätzlich dürfen unprivilegierte Prozesse Port 80/443 binden, weil die
+#  localhost-Weiterleitung von Windows die firewalld-Portumleitung umgeht.
 # =============================================================================
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 FILES="${HERE}/../files"
+IS_WSL=no
+grep -qiE 'microsoft|wsl' /proc/sys/kernel/osrelease 2>/dev/null && IS_WSL=yes
+# WSL: Windows-Host erreicht die VM über das NAT-Netz 172.16.0.0/12
+[[ "$IS_WSL" == yes ]] && ADMIN_CIDR="${ADMIN_CIDR:-172.16.0.0/12}"
 ADMIN_CIDR="${ADMIN_CIDR:?ADMIN_CIDR setzen, z. B. 10.10.0.0/24}"
 ADMIN_USERS="${ADMIN_USERS:-}"
 SRP_USER="${SRP_USER:-srp}"
@@ -39,14 +49,14 @@ install_file() { # src dest mode
   restorecon -F "$2" 2>/dev/null || true
 }
 
-echo "Start Härtung: $(date -Is) auf $(hostname -f)"
+echo "Start Härtung: $(date -Is) auf $(hostname -f 2>/dev/null || cat /etc/hostname)$([[ $IS_WSL == yes ]] && echo ' (WSL2)')"
 
 # -----------------------------------------------------------------------------
 step "1. System aktualisieren & Pakete minimieren (OPS.1.1.3, CM-7)"
 dnf -y upgrade --refresh
-dnf -y install policycoreutils-python-utils setools-console audit aide chrony firewalld \
-  dnf5-plugin-automatic age openssl tar jq libpwquality shadow-utils fuse-overlayfs slirp4netns \
-  || dnf -y install policycoreutils-python-utils audit aide chrony firewalld dnf-automatic age openssl tar jq libpwquality shadow-utils fuse-overlayfs slirp4netns
+BASE_PKGS="policycoreutils-python-utils audit aide chrony firewalld openssh-server age openssl tar jq libpwquality shadow-utils fuse-overlayfs slirp4netns iproute rsync sudo"
+# shellcheck disable=SC2086
+dnf -y install $BASE_PKGS setools-console dnf5-plugin-automatic || dnf -y install $BASE_PKGS dnf-automatic
 for p in telnet telnet-server rsh rsh-server ypbind ypserv tftp tftp-server talk xinetd vsftpd; do
   rpm -q "$p" &>/dev/null && dnf -y remove "$p" && ok "entfernt: $p"
 done
@@ -66,7 +76,10 @@ install_file "${FILES}/modprobe/90-bsi-blacklist.conf" /etc/modprobe.d/90-bsi-bl
 
 # -----------------------------------------------------------------------------
 step "3. SELinux enforcing (SYS.1.3, AC-3)"
-if [[ "$(getenforce)" == "Disabled" ]]; then
+if [[ "$IS_WSL" == yes ]]; then
+  sed -i 's/^SELINUX=.*/SELINUX=enforcing/' /etc/selinux/config
+  warn "WSL2: Der WSL-Kernel enthält kein SELinux – Konfiguration gesetzt, Durchsetzung nicht möglich (verify: N/A)"
+elif [[ "$(getenforce)" == "Disabled" ]]; then
   warn "SELinux ist deaktiviert – Relabel beim nächsten Boot wird vorbereitet"
   sed -i 's/^SELINUX=.*/SELINUX=enforcing/' /etc/selinux/config
   touch /.autorelabel
@@ -82,7 +95,7 @@ for b in container_manage_cgroup=off container_use_devices=off virt_use_nfs=off 
   name="${b%%=*}"; val="${b#*=}"
   if getsebool "$name" &>/dev/null; then setsebool -P "$name" "$val"; ok "SELinux-Boolean $name=$val"; fi
 done
-ok "SELinux: $(getenforce)"
+ok "SELinux: $(getenforce 2>/dev/null || echo n/a)"
 
 # -----------------------------------------------------------------------------
 step "4. Kryptorichtlinie (TR-02102 / SC-13)"
@@ -111,6 +124,7 @@ passwd -l root >/dev/null 2>&1 && ok "Root-Passwort gesperrt (Konsole: sudo übe
 
 # -----------------------------------------------------------------------------
 step "6. SSH-Härtung (TR-02102-4, AC-17)"
+systemctl enable --now sshd >/dev/null 2>&1 || warn "sshd konnte nicht gestartet werden"
 if [[ "$SKIP_SSH" == "yes" ]]; then
   warn "SSH-Härtung übersprungen (SKIP_SSH=yes)"
 else
@@ -119,6 +133,11 @@ else
     h="$(getent passwd "$u" | cut -d: -f6)"
     [[ -s "${h}/.ssh/authorized_keys" ]] && has_key=yes
   done
+  # WSL: kein Aussperr-Risiko (Konsole über "wsl" bleibt immer erreichbar)
+  if [[ "$has_key" != "yes" && "$IS_WSL" == yes ]]; then
+    warn "WSL2: kein authorized_keys gefunden – SSH-Härtung wird trotzdem angewendet (Login danach nur mit Schlüssel)"
+    has_key=yes
+  fi
   if [[ "$has_key" != "yes" ]]; then
     warn "Kein Admin mit authorized_keys gefunden – SSH-Härtung NICHT angewendet (Aussperr-Schutz)."
   else
@@ -136,11 +155,16 @@ fi
 
 # -----------------------------------------------------------------------------
 step "7. Firewall – firewalld/nftables, Default DROP (NET.3.2, SC-7)"
-systemctl enable --now firewalld
+systemctl enable --now firewalld || { warn "firewalld startet nicht"; [[ "$IS_WSL" == yes ]] || exit 1; }
 sed "s#ADMIN_CIDR_PLACEHOLDER#${ADMIN_CIDR}#" "${FILES}/firewalld/srp.xml" > /etc/firewalld/zones/srp.xml
 restorecon -F /etc/firewalld/zones/srp.xml || true
 firewall-cmd --reload >/dev/null
-for ifc in $(nmcli -t -f DEVICE,TYPE device status | awk -F: '$2=="ethernet"{print $1}'); do
+if command -v nmcli >/dev/null; then
+  IFACES="$(nmcli -t -f DEVICE,TYPE device status | awk -F: '$2=="ethernet"{print $1}')"
+else
+  IFACES="$(ip -o link show | awk -F': ' '{print $2}' | sed 's/@.*//' | grep -E '^(eth|en)' || true)"
+fi
+for ifc in $IFACES; do
   firewall-cmd --permanent --zone=srp --change-interface="$ifc" >/dev/null && ok "Interface $ifc → Zone srp"
 done
 firewall-cmd --set-default-zone=srp >/dev/null
@@ -152,7 +176,12 @@ ok "Aktive Zone: $(firewall-cmd --get-default-zone) – $(firewall-cmd --zone=sr
 # -----------------------------------------------------------------------------
 step "8. Kernel/sysctl-Härtung (SYS.1.3, SC-5)"
 install_file "${FILES}/sysctl/90-bsi-hardening.conf" /etc/sysctl.d/90-bsi-hardening.conf
-sysctl --system >/dev/null && ok "sysctl angewendet"
+if [[ "$IS_WSL" == yes ]]; then
+  # Windows leitet localhost:443 direkt auf 127.0.0.1:443 in der VM weiter (ohne PREROUTING/forward-port)
+  printf '# WSL2: Portal (rootless) bindet 80/443 direkt\nnet.ipv4.ip_unprivileged_port_start = 80\n' > /etc/sysctl.d/91-wsl.conf
+  warn "WSL2: Kernel wird von allen WSL-Distributionen geteilt – sysctl-Werte (z. B. ip_forward=0) wirken auch dort"
+fi
+sysctl --system >/dev/null 2>&1 && ok "sysctl angewendet" || warn "sysctl: einzelne Parameter nicht setzbar (sysctl --system prüfen)"
 mkdir -p /etc/systemd/coredump.conf.d
 printf '[Coredump]\nStorage=none\nProcessSizeMax=0\n' > /etc/systemd/coredump.conf.d/90-bsi.conf
 printf '* hard core 0\n' > /etc/security/limits.d/90-nocore.conf
@@ -171,9 +200,13 @@ ok "Mount-Optionen gesetzt (Neustart von tmp.mount beim nächsten Boot)"
 step "10. Protokollierung: auditd & journald (OPS.1.1.5, AU-2/AU-9/AU-11)"
 install_file "${FILES}/audit/90-bsi.rules" /etc/audit/rules.d/90-bsi.rules 0640
 sed -i 's/^max_log_file_action.*/max_log_file_action = keep_logs/; s/^space_left_action.*/space_left_action = email/; s/^admin_space_left_action.*/admin_space_left_action = single/; s/^disk_full_action.*/disk_full_action = halt/; s/^log_group.*/log_group = root/' /etc/audit/auditd.conf
-systemctl enable auditd >/dev/null
-augenrules --check >/dev/null 2>&1 || true
-augenrules --load >/dev/null 2>&1 || warn "Audit-Regeln sind bereits immutable (-e 2) – werden nach Neustart aktiv"
+if [[ "$IS_WSL" == yes ]]; then
+  warn "WSL2: Der WSL-Kernel enthält kein Audit-Subsystem – Regeln installiert, auditd nicht aktivierbar (verify: N/A)"
+else
+  systemctl enable auditd >/dev/null
+  augenrules --check >/dev/null 2>&1 || true
+  augenrules --load >/dev/null 2>&1 || warn "Audit-Regeln sind bereits immutable (-e 2) – werden nach Neustart aktiv"
+fi
 install_file "${FILES}/journald/90-bsi.conf" /etc/systemd/journald.conf.d/90-bsi.conf
 mkdir -p /var/log/journal && systemd-tmpfiles --create --prefix /var/log/journal
 systemctl restart systemd-journald
@@ -191,7 +224,7 @@ if [[ -n "${NTP_SERVERS:-}" ]]; then
   : > /etc/chrony.d/90-srp-sources.conf
   for s in $NTP_SERVERS; do echo "server $s iburst" >> /etc/chrony.d/90-srp-sources.conf; done
 fi
-systemctl enable --now chronyd >/dev/null && systemctl restart chronyd && ok "chrony aktiv"
+if systemctl enable --now chronyd >/dev/null 2>&1 && systemctl restart chronyd; then ok "chrony aktiv"; else warn "chrony konnte nicht gestartet werden"; fi
 
 # -----------------------------------------------------------------------------
 step "12. Automatische Sicherheitsupdates (OPS.1.1.3, SI-2)"
@@ -223,7 +256,25 @@ SRP_UID="$(id -u "$SRP_USER")"
 install -d -m 0750 -o "$SRP_USER" -g "$SRP_USER" /srv/srp "$APP_DIR"
 install -d -m 0700 -o "$SRP_USER" -g "$SRP_USER" /srv/backup/srp
 
+# Rootless-Container brauchen delegierte cgroup-Controller (cpu/io für Ressourcenlimits)
+if ! cmp -s "${FILES}/systemd/user-delegate.conf" /etc/systemd/system/user@.service.d/delegate.conf; then
+  install_file "${FILES}/systemd/user-delegate.conf" /etc/systemd/system/user@.service.d/delegate.conf
+  systemctl daemon-reload
+  systemctl try-restart "user@${SRP_UID}.service" 2>/dev/null || true
+  ok "cgroup-Delegation (cpu, cpuset, io, memory, pids) für Benutzerdienste"
+fi
+if [[ ! -f /sys/fs/cgroup/cgroup.controllers ]]; then
+  warn "cgroup v2 nicht aktiv – Ressourcenlimits der Container greifen rootless nicht."
+  [[ "$IS_WSL" == yes ]] && warn "WSL2: in %UserProfile%\\.wslconfig unter [wsl2] 'kernelCommandLine = cgroup_no_v1=all' setzen, dann 'wsl --shutdown'"
+fi
+
 if [[ "$INSTALL_DOCKER" == "yes" ]]; then
+  # Fedora-Pakete (moby-engine, z. B. aus der WSL-Demo) kollidieren mit Docker CE
+  if rpm -q moby-engine &>/dev/null; then
+    systemctl disable --now docker.service docker.socket >/dev/null 2>&1 || true
+    dnf -y remove moby-engine docker-compose docker-cli >/dev/null 2>&1 || dnf -y remove moby-engine
+    warn "moby-engine (rootful) entfernt – Container/Volumes des Root-Daemons werden nicht übernommen"
+  fi
   if ! rpm -q docker-ce &>/dev/null; then
     dnf -y install dnf-plugins-core
     dnf config-manager addrepo --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo 2>/dev/null \
@@ -239,6 +290,7 @@ if [[ "$INSTALL_DOCKER" == "yes" ]]; then
   install -D -m 0644 -o "$SRP_USER" -g "$SRP_USER" "${FILES}/docker/rootless-override.conf" "${SRP_HOME}/.config/systemd/user/docker.service.d/override.conf"
   runuser -u "$SRP_USER" -- env XDG_RUNTIME_DIR="/run/user/${SRP_UID}" \
     dockerd-rootless-setuptool.sh install --skip-iptables >/dev/null 2>&1 || warn "dockerd-rootless-setuptool: bitte Ausgabe manuell prüfen"
+  for _ in 1 2 3 4 5; do [[ -d "/run/user/${SRP_UID}" ]] && break; sleep 2; done
   runuser -u "$SRP_USER" -- env XDG_RUNTIME_DIR="/run/user/${SRP_UID}" systemctl --user daemon-reload
   runuser -u "$SRP_USER" -- env XDG_RUNTIME_DIR="/run/user/${SRP_UID}" systemctl --user enable --now docker
   ok "Rootless Docker für ${SRP_USER} aktiv (DOCKER_HOST=unix:///run/user/${SRP_UID}/docker.sock)"

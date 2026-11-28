@@ -41,8 +41,12 @@ services:
     environment:
       PORTAL_HOSTNAME: ${PORTAL_HOSTNAME}
       ADMIN_ALLOW_CIDR: ${ADMIN_ALLOW_CIDR:-10.0.0.0/8}
+      # zusätzliches Netz für die Admin-Konsole (Standard: nur lokal auf dem Server)
+      ADMIN_ALLOW_CIDR_EXTRA: ${ADMIN_ALLOW_CIDR_EXTRA:-127.0.0.1/32}
     volumes:
-      - ./proxy/certs:/etc/nginx/certs:ro,Z
+      # Einzeldateien statt Verzeichnis: das Verzeichnis bleibt 0700 (auch rootless lesbar für nginx)
+      - ./proxy/certs/tls.crt:/etc/nginx/certs/tls.crt:ro,Z
+      - ./proxy/certs/tls.key:/etc/nginx/certs/tls.key:ro,Z
     tmpfs:
       - /tmp:size=64m,mode=1777
       - /var/cache/nginx:size=64m,uid=101

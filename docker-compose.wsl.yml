@@ -1,0 +1,11 @@
+# =============================================================================
+# Zusatz für Fedora unter WSL2 (wird über COMPOSE_FILE in .env eingebunden).
+# Windows leitet https://localhost direkt auf 127.0.0.1:443 der VM weiter –
+# vorbei an der firewalld-Portumleitung 443 -> 8443. Darum publiziert der Proxy
+# zusätzlich 443/80 (rootless: net.ipv4.ip_unprivileged_port_start=80, siehe harden.sh).
+# =============================================================================
+services:
+  proxy:
+    ports:
+      - "443:8443"
+      - "80:8080"
