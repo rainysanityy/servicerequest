@@ -109,7 +109,9 @@ sudo systemctl reboot
 sudo /srv/srp/app/fedora-hardening/scripts/verify.sh     # alle Prüfungen PASS
 ```
 
-Alternativ: `ansible-playbook -i inventory.ini site.yml` (siehe `fedora-hardening/README.md`). Das Skript richtet u. a. das Dienstkonto `srp`, rootless Docker (mit slirp4netns-Porttreiber zur Erhaltung der Client-IP), firewalld-Zone `srp`, auditd, journald, dnf-automatic, AIDE und den Backup-Timer ein.
+Alternativ: `ansible-playbook -i inventory.ini site.yml` (siehe `fedora-hardening/README.md`). Das Skript richtet u. a. das Dienstkonto `srp`, rootless Docker (mit slirp4netns-Porttreiber zur Erhaltung der Client-IP), firewalld-Zone `srp`, auditd, journald, dnf-automatic, AIDE und den Backup-Timer ein. Zusätzlich delegiert es die cgroup-v2-Controller (cpu, cpuset, io, memory, pids) an Benutzerdienste, damit die Ressourcenlimits der Container auch rootless greifen.
+
+**Test-/Schulungsumgebung unter WSL2:** `harden.sh` und `verify.sh` erkennen WSL2 und setzen alles Machbare wie auf einem echten Server um. SELinux und auditd sind im WSL-Kernel nicht vorhanden und werden als *N/A* ausgewiesen; für den Produktivbetrieb ist WSL2 nicht vorgesehen (Details: `fedora-hardening/README.md`).
 
 ## Schritt 2 – Projekt bereitstellen
 
@@ -123,6 +125,8 @@ cd /srv/srp/app
 
 ## Schritt 3 – Konfiguration und Secrets
 
+**Empfohlen:** Die Schritte 3 bis 7 erledigt das geführte Skript `./scripts/prod-setup.sh` (wiederholbar). Es fragt Hostname, E-Mail-Domains, Admin-Netz, Backup-Schlüssel, Zertifikat und das erste Admin-Konto ab, entfernt Demo-Inhalte, prüft die Konfiguration (`prod-preflight.sh`), startet die Dienste, richtet die Zwei-Faktor-Pflicht ein und führt den Smoke-Test aus. Unbeaufsichtigt: Werte als Umgebungsvariablen und `NONINTERACTIVE=1`. Die folgenden Abschnitte beschreiben die Einzelschritte.
+
 ```bash
 ./scripts/init-secrets.sh
 vi .env
@@ -132,6 +136,7 @@ vi .env
 |---|---|---|
 | `PORTAL_HOSTNAME` | Öffentlicher FQDN | `portal.example.local` |
 | `ADMIN_ALLOW_CIDR` | Netz für Keycloak-Admin-Konsole | `10.10.0.0/24` |
+| `ADMIN_ALLOW_CIDR_EXTRA` | zweites Netz für die Admin-Konsole | `127.0.0.1/32` (nur lokal) |
 | `KEYCLOAK_ADMIN_USER/PASSWORD` | Temporärer Bootstrap-Admin | zufällig erzeugt |
 | `KEYCLOAK_DB_PASSWORD` | Keycloak-DB | zufällig erzeugt |
 | `KEYCLOAK_ADMIN_API_SECRET` | Secret des Service-Accounts `portal-admin-api` (Benutzer & Rollen) | zufällig erzeugt |
@@ -147,7 +152,7 @@ vi .env
 
 ## Schritt 4 – TLS-Zertifikat
 
-Zertifikat (inkl. Zwischenzertifikate) als `proxy/certs/tls.crt`, privaten Schlüssel als `proxy/certs/tls.key` ablegen (ECDSA P-384 oder RSA ≥ 3072 bit). Rechte: Dateien 0444, Verzeichnis 0700. Für Testumgebungen: `./scripts/gen-selfsigned-cert.sh`.
+Zertifikat (inkl. Zwischenzertifikate) als `proxy/certs/tls.crt`, privaten Schlüssel als `proxy/certs/tls.key` ablegen (ECDSA P-384 oder RSA ≥ 3072 bit). Rechte: Dateien 0444, Verzeichnis 0700. Der Proxy bindet die beiden Dateien einzeln ein, daher bleibt das Verzeichnis auch im Rootless-Betrieb geschlossen. Für Testumgebungen: `./scripts/gen-selfsigned-cert.sh`.
 
 ## Schritt 5 – Bauen und starten
 
@@ -163,14 +168,15 @@ Beim ersten Start legt PostgreSQL die Rollen `portal_migrator` und `portal_app` 
 ## Schritt 6 – Keycloak einrichten
 
 1. Admin-Konsole aus dem Admin-Netz öffnen: `https://<PORTAL_HOSTNAME>/auth/admin/` und mit dem Bootstrap-Konto anmelden.
-2. Im **Master-Realm** personalisierte Admin-Konten anlegen, Rolle `admin` zuweisen, **OTP** als Required Action setzen.
-3. **Bootstrap-Konto löschen** und `KEYCLOAK_ADMIN_PASSWORD` aus `.env` entfernen.
-4. Realm `itportal` prüfen: Clients `portal-frontend` (öffentlich, PKCE S256, Redirect-URI `https://<host>/*`) und `portal-api` (Audience), Client-Scope `portal-api-audience`, Gruppen und Realm-Rollen.
-5. **Benutzeranbindung:** *User Federation → LDAP/Active Directory* (Modus *READ_ONLY*, LDAPS, Bind-Konto mit Leserechten) einrichten; Gruppen über *group-ldap-mapper* auf `/Mitarbeitende`, `/IT-UHD`, `/IT-Portal-Admins` abbilden **oder** Gruppenmitgliedschaften direkt in Keycloak pflegen.
-6. **Kein Mailserver:** Die Selbstregistrierung arbeitet ohne E-Mail-Bestätigung; „Passwort vergessen“ ist deaktiviert. Passwörter setzt die Administration in Keycloak zurück (temporäres Passwort).
-7. Ersten Portal-Admin festlegen: dem eigenen Konto in Keycloak die Gruppe `/IT-Portal-Admins` zuweisen. Alle weiteren Rollen werden danach im Portal unter *Admin → Benutzer & Rollen* vergeben.
-8. Demo-Benutzer (nur Test) aus `keycloak/import/` entfernen.
-9. **Login-Theme:** Das Image enthält das Theme `itportal` (Material 3 Expressive, Dark/Light nach Systemeinstellung, Schrift lokal eingebunden). Der Realm-Import setzt es automatisch; bei bestehenden Realms unter *Realm settings → Themes → Login theme* `itportal` wählen. Anpassungen (Farben, Texte) erfolgen in `keycloak/themes/itportal/login/` (CSS-Variablen in `resources/css/itportal.css`, Texte in `messages/`), danach Image neu bauen.
+2. **Zwei-Faktor-Pflicht:** `./scripts/keycloak-setup.sh [benutzer e-mail vorname nachname]` legt den Browser-Flow `browser-mfa` an und aktiviert ihn: Konten mit der Realm-Rolle `first-level` (Gruppen `/IT-UHD` und `/IT-Portal-Admins`) müssen TOTP verwenden und werden beim ersten Login zur Einrichtung gezwungen; für alle anderen bleibt TOTP freiwillig. Optional wird das erste Portal-Admin-Konto mit temporärem Passwort angelegt. Das Skript ist idempotent und wird in der CI gegen Keycloak getestet.
+3. Im **Master-Realm** personalisierte Admin-Konten anlegen, Rolle `admin` zuweisen, **OTP** als Required Action setzen.
+4. **Bootstrap-Konto löschen** und `KEYCLOAK_ADMIN_PASSWORD` aus `.env` entfernen. Für spätere Läufe von `keycloak-setup.sh` dann `KC_ADMIN_USER`/`KC_ADMIN_PASSWORD` eines personalisierten Master-Admins übergeben.
+5. Realm `itportal` prüfen: Clients `portal-frontend` (öffentlich, PKCE S256, Redirect-URI `https://<host>/*`) und `portal-api` (Audience), Client-Scope `portal-api-audience`, Gruppen und Realm-Rollen.
+6. **Benutzeranbindung:** *User Federation → LDAP/Active Directory* (Modus *READ_ONLY*, LDAPS, Bind-Konto mit Leserechten) einrichten; Gruppen über *group-ldap-mapper* auf `/Mitarbeitende`, `/IT-UHD`, `/IT-Portal-Admins` abbilden **oder** Gruppenmitgliedschaften direkt in Keycloak pflegen.
+7. **Kein Mailserver:** Die Selbstregistrierung arbeitet ohne E-Mail-Bestätigung; „Passwort vergessen“ ist deaktiviert. Passwörter setzt die Administration in Keycloak zurück (temporäres Passwort).
+8. Ersten Portal-Admin festlegen (falls nicht per `keycloak-setup.sh` angelegt): dem eigenen Konto in Keycloak die Gruppe `/IT-Portal-Admins` zuweisen. Alle weiteren Rollen werden danach im Portal unter *Admin → Benutzer & Rollen* vergeben.
+9. Demo-Benutzer (nur Test) aus `keycloak/import/` entfernen (erledigt `prod-setup.sh`).
+10. **Login-Theme:** Das Image enthält das Theme `itportal` (Material 3 Expressive, Dark/Light nach Systemeinstellung, Schrift lokal eingebunden). Der Realm-Import setzt es automatisch; bei bestehenden Realms unter *Realm settings → Themes → Login theme* `itportal` wählen. Anpassungen (Farben, Texte) erfolgen in `keycloak/themes/itportal/login/` (CSS-Variablen in `resources/css/itportal.css`, Texte in `messages/`), danach Image neu bauen.
 
 **Bestehende Installation (Realm bereits importiert):** Der Import überschreibt keinen vorhandenen Realm. Für Selbstregistrierung und Rollenverwaltung in der Admin-Konsole einmalig: *Realm settings → Login*: „User registration“ aktivieren, „Verify email“ und „Forgot password“ deaktivieren; *Realm settings → User registration → Default groups*: `/Mitarbeitende`; *Clients → Create*: `portal-admin-api` (Client authentication an, nur *Service accounts roles*), Secret = `KEYCLOAK_ADMIN_API_SECRET`; *Service account roles*: `realm-management` → `query-users`, `view-users`, `query-groups`, `manage-users`.
 
@@ -183,6 +189,8 @@ Der Realm-Import erfolgt nur, wenn der Realm noch nicht existiert. Spätere Änd
 | Prüfung | Erwartung |
 |---|---|
 | `verify.sh` | keine Abweichungen |
+| `prod-preflight.sh` | keine Fehler, Warnungen bewertet |
+| Login als UHD-Konto ohne TOTP | Keycloak erzwingt die TOTP-Einrichtung |
 | `smoke-test.sh` | alle Prüfungen ✓ |
 | Login als Testnutzer je Rolle | korrekte Navigation, `/api/me` liefert Rollen |
 | Zugriff `/support` als `user` | „Kein Zugriff“, Audit-Eintrag `authz.denied` bei API-Aufruf |
@@ -401,6 +409,8 @@ SELECT json_build_object(
 Interne Notizen sind vor Herausgabe durch die/den DSB auf Rechte Dritter zu prüfen (Art. 15 Abs. 4 DSGVO).
 
 ## B. Prüfliste vor Produktivsetzung
+
+Die ausführliche, abzuzeichnende Fassung liegt im Repository unter `docs/GO-LIVE.md`.
 
 - [ ] Härtung angewendet, `verify.sh` ohne Abweichungen, Neustart erfolgt
 - [ ] LUKS-Verschlüsselung `/srv` aktiv, FSS-Schlüssel offline gesichert

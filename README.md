@@ -138,42 +138,50 @@ Alle Container laufen **non-root**, mit **read-only Root-Dateisystem**, `cap_dro
 
 ## Schnellstart
 
-> **Nur ausprobieren (Windows + WSL):** In einer Fedora-WSL genügt
-> `git clone https://github.com/rainysanityy/servicerequest.git && cd servicerequest && ./scripts/wsl-demo-install.sh`
-> – danach im Windows-Browser `https://localhost` öffnen. Ohne Härtung, nur für Demo/Test.
-
-> Voraussetzungen: Fedora Server ≥ 41, ein Admin-Konto mit SSH-Schlüssel, DNS-Name und TLS-Zertifikat (für Tests kann ein selbstsigniertes erzeugt werden).
+### Ausprobieren (Windows + Fedora-WSL)
 
 ```bash
-git clone https://github.com/rainysanityy/servicerequest.git
-cd servicerequest
+git clone https://github.com/rainysanityy/servicerequest.git && cd servicerequest
+./scripts/wsl-demo-install.sh          # danach im Windows-Browser: https://localhost
+```
 
-# 1. Server härten (einmalig, als root) – Details: fedora-hardening/README.md
+Mit Demo-Benutzern (ohne 2FA) und ca. 12 Monaten fiktiver Tickets. Optional vorher härten wie einen echten Server –
+`sudo ADMIN_USERS="$USER" fedora-hardening/scripts/harden.sh`, dann `wsl --shutdown` und Skript erneut starten; das Portal läuft
+danach rootless unter dem Dienstkonto `srp`. SELinux und auditd fehlen im WSL-Kernel und erscheinen in `verify.sh` als *N/A*.
+
+### Produktivbetrieb (Fedora Server)
+
+> Voraussetzungen: Fedora Server ≥ 41, Admin-Konto mit SSH-Schlüssel, DNS-Name, TLS-Zertifikat der Unternehmens-PKI,
+> `age`-Schlüsselpaar für Backups. Vollständige Abnahme: [docs/GO-LIVE.md](docs/GO-LIVE.md).
+
+```bash
+git clone https://github.com/rainysanityy/servicerequest.git && cd servicerequest
+
+# 1. Server härten (einmalig, als root), Neustart, Nachweis
 sudo ADMIN_CIDR=10.10.0.0/24 ADMIN_USERS="max.admin" fedora-hardening/scripts/harden.sh
 sudo systemctl reboot
+sudo fedora-hardening/scripts/verify.sh
 
 # 2. Projekt für das Dienstkonto bereitstellen
-sudo rsync -a ./ /srv/srp/app/ && sudo chown -R srp:srp /srv/srp/app
-sudo -u srp bash
+sudo rsync -a --exclude .git ./ /srv/srp/app/ && sudo chown -R srp:srp /srv/srp/app
+sudo -u srp -s
 export XDG_RUNTIME_DIR=/run/user/$(id -u) DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock
 cd /srv/srp/app
 
-# 3. Secrets, Konfiguration, Zertifikat
-./scripts/init-secrets.sh            # erzeugt secrets/* und .env
-vi .env                              # PORTAL_HOSTNAME, ADMIN_ALLOW_CIDR, BACKUP_AGE_RECIPIENT
-./scripts/gen-selfsigned-cert.sh     # nur Test – Produktion: PKI-Zertifikat nach proxy/certs/
-./scripts/load-demo-users.sh         # optional, nur Test
-
-# 4. Starten und prüfen
-docker compose build
-docker compose up -d
-docker compose ps
-./scripts/smoke-test.sh
+# 3. Geführte Einrichtung: .env, Zertifikat, Start, 2FA-Pflicht, erster Admin, Prüfungen
+./scripts/prod-setup.sh
 ```
 
-Danach `https://<PORTAL_HOSTNAME>/` öffnen. Demo-Konten (nur nach `load-demo-users.sh`): `anna.mueller` (Mitarbeitende), `uwe.helpdesk` (First-Level), `alex.admin` (Admin) – Initialpasswörter in [`keycloak/demo-users/`](keycloak/demo-users/), Passwortwechsel beim ersten Login; die Demo-Konten haben keine 2FA-Pflicht (in Produktion für Support/Admin TOTP als Pflichtaktion setzen).
+`prod-setup.sh` fragt Hostname, E-Mail-Domains, Admin-Netz, Backup-Schlüssel, Zertifikat und das erste Admin-Konto ab
+(alles auch per Umgebungsvariablen mit `NONINTERACTIVE=1`), entfernt Demo-Inhalte, prüft die Konfiguration mit
+`prod-preflight.sh`, startet die Dienste, richtet die **Zwei-Faktor-Pflicht für UHD und Admins** ein und führt den Smoke-Test aus.
 
-> **Reproduzierbare Builds:** Einmalig `npm install` in `frontend/` und `backend/` ausführen und die erzeugten `package-lock.json` committen. Die Dockerfiles und die CI verwenden dann automatisch `npm ci`.
+| Skript | Zweck |
+|---|---|
+| `scripts/prod-setup.sh` | geführte Produktiv-Einrichtung (wiederholbar) |
+| `scripts/prod-preflight.sh` | Go-Live-Prüfung: Platzhalter, Zertifikat, Demo-Reste, SELinux, Rootless, Backup, Issuer |
+| `scripts/keycloak-setup.sh` | Keycloak: 2FA-Pflicht für Rolle `first-level` (UHD + Admin), erstes Portal-Admin-Konto |
+| `scripts/smoke-test.sh` | Funktions- und Sicherheitsprüfung nach Deployment/Update |
 
 ## Rollen
 
@@ -257,6 +265,7 @@ Die CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) führt bei jedem
 | Backup | `./scripts/backup.sh` (täglich per `srp-backup.timer`) |
 | Restore | `./scripts/restore.sh /srv/backup/srp/<zeitstempel> ~/age-identity.txt` |
 | Härtungsnachweis | `sudo fedora-hardening/scripts/verify.sh` |
+| Go-Live-/Konfigurationsprüfung | `./scripts/prod-preflight.sh` |
 
 Details im [Betriebskonzept](docs/pdf/Betriebskonzept.pdf). Änderungen: [CHANGELOG.md](CHANGELOG.md).
 

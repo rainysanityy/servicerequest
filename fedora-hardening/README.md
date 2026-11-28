@@ -54,3 +54,26 @@ sudo systemctl reboot               # Audit-Regeln (immutable), tmp.mount, Kerne
 * **Cockpit** ist deaktiviert. Falls benötigt: nur aus dem Admin-Netz freigeben (Rich Rule) und MFA nutzen.
 * **Rootless Docker & Ports < 1024**: nicht über `ip_unprivileged_port_start` absenken, sondern firewalld-Forward-Ports nutzen (bereits konfiguriert).
 * Ausnahmen/Abweichungen sind im Infosicherheitskonzept zu dokumentieren (Risikoakzeptanz).
+
+## Betrieb unter WSL2 (Test-/Schulungsumgebung)
+
+`harden.sh` und `verify.sh` erkennen Fedora unter WSL2 automatisch. Alles, was der WSL-Kernel bereitstellt, wird wie auf
+einem echten Server umgesetzt (SSH, firewalld-Zone `srp`, sysctl, `/tmp`/`/dev/shm`, journald mit Seal, dnf-automatic,
+AIDE, chrony, Konten/sudo, rootless Docker unter `srp`).
+
+| Kontrolle | WSL2 |
+|---|---|
+| SELinux enforcing, Booleans | **N/A** – WSL-Kernel ohne SELinux; `/etc/selinux/config` steht trotzdem auf `enforcing` |
+| auditd, Audit-Regeln, immutable | **N/A** – WSL-Kernel ohne Audit-Subsystem; Regeln liegen in `/etc/audit/rules.d/` |
+| USB-Storage | geprüft wird die modprobe-Sperre (WSL hat keinen direkten USB-Zugriff) |
+| SSH ohne `authorized_keys` | Härtung wird trotzdem angewendet (kein Aussperr-Risiko, `wsl` öffnet immer eine Konsole) |
+| Ports 80/443 | `net.ipv4.ip_unprivileged_port_start=80`, weil die localhost-Weiterleitung von Windows die firewalld-Portumleitung umgeht |
+| `ADMIN_CIDR` | Standard `172.16.0.0/12` (WSL-NAT) |
+
+Ablauf: `sudo ADMIN_USERS="$USER" fedora-hardening/scripts/harden.sh` → in PowerShell `wsl --shutdown` → WSL neu öffnen →
+`sudo fedora-hardening/scripts/verify.sh` → `./scripts/wsl-demo-install.sh` (installiert dann rootless als `srp`).
+
+Hinweise: Alle WSL-Distributionen teilen sich einen Kernel – sysctl-Werte wie `net.ipv4.ip_forward=0` wirken auch in
+anderen Distributionen (z. B. Docker Desktop). Ressourcenlimits für rootless Container brauchen cgroup v2; falls `harden.sh`
+davor warnt, in `%UserProfile%\.wslconfig` unter `[wsl2]` die Zeile `kernelCommandLine = cgroup_no_v1=all` ergänzen.
+

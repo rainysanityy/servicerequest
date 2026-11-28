@@ -19,7 +19,7 @@ jobs:
       - name: package-lock.json erzeugen
         run: |
           for d in backend frontend; do
-            (cd "$d" && npm install --package-lock-only --ignore-scripts --no-audit --no-fund) \
+            (cd "$d" && npx -y npm@11 install --package-lock-only --ignore-scripts --no-audit --no-fund) \
               || { tail -60 ~/.npm/_logs/*-debug-0.log; exit 1; }
           done
       - name: Prüfen (npm ci) und Audit-Bericht
