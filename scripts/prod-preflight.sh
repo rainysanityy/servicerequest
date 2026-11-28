@@ -6,7 +6,7 @@
 # Exit-Code 1 bei mindestens einem Fehler (✗). Warnungen (⚠) blockieren nicht.
 # =============================================================================
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 STATIC=false; [[ "${1:-}" == "--static" ]] && STATIC=true
 errors=0; warnings=0; host=""

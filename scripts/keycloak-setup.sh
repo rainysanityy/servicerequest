@@ -24,7 +24,7 @@ if [[ -z "$KC_ADMIN_PASSWORD" ]]; then
   read -r -s -p "Passwort: " KC_ADMIN_PASSWORD; echo
 fi
 export KC_ADMIN_USER KC_ADMIN_PASSWORD
-export KC_REALM="$(getenv KEYCLOAK_REALM)"; KC_REALM="${KC_REALM:-itportal}"
+KC_REALM="$(getenv KEYCLOAK_REALM)"; KC_REALM="${KC_REALM:-itportal}"; export KC_REALM
 export FIRST_ADMIN_USERNAME="${1:-}" FIRST_ADMIN_EMAIL="${2:-}" FIRST_ADMIN_FIRSTNAME="${3:-Portal}" FIRST_ADMIN_LASTNAME="${4:-Admin}"
 
 "${dc[@]}" run --rm --no-deps -T \

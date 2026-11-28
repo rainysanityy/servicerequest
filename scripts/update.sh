@@ -39,7 +39,7 @@ elif [[ -d "$target" ]]; then
     --exclude 'keycloak/import/itportal-users-0.json' --exclude 'frontend/public/config.json' \
     "${target%/}/" ./
 else
-  echo "„$target“ ist weder ein Git-Tag (kein Git-Klon) noch ein Verzeichnis."; exit 1
+  echo "'$target' ist weder ein Git-Tag (kein Git-Klon) noch ein Verzeichnis."; exit 1
 fi
 if command -v jq >/dev/null; then
   tmp="$(mktemp)"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Schneller Funktions- und Sicherheits-Check nach Deployment/Update.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 HOST="$(grep -E '^PORTAL_HOSTNAME=' .env | cut -d= -f2)"
 PORT="${PROXY_HTTPS_PORT:-8443}"
 BASE="https://${HOST}:${PORT}"
