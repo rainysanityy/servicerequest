@@ -17,7 +17,7 @@ const CreateTicket = z
     catalogItemId: uuid,
     title: line(3, 160),
     description: text(0, 5000).default(''),
-    formData: z.record(z.unknown()).default({}),
+    formData: z.record(z.string(), z.unknown()).default({}),
   })
   .strict();
 

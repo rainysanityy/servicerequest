@@ -81,11 +81,11 @@ export type FormSchema = z.infer<typeof FormSchema>;
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-function fieldValidator(f: FieldDef): z.ZodTypeAny {
-  let v: z.ZodTypeAny;
+function fieldValidator(f: FieldDef): z.ZodType {
+  let v: z.ZodType;
   switch (f.type) {
     case 'text': {
-      let s: z.ZodTypeAny = z.string().max(1000).transform(cleanLine).pipe(z.string().max(f.maxLength ?? 200));
+      let s: z.ZodType = z.string().max(1000).transform(cleanLine).pipe(z.string().max(f.maxLength ?? 200));
       if (f.pattern) {
         const re = new RegExp(f.pattern, 'u');
         s = s.pipe(z.string().refine((x) => x === '' || re.test(x), `${f.label}: ungültiges Format`));
@@ -126,7 +126,7 @@ function fieldValidator(f: FieldDef): z.ZodTypeAny {
   // Bedingte Felder: Pflicht wird erst im Formular-Kontext geprüft (siehe buildFormValidator)
   if (f.when) return v.optional();
   if (f.required) {
-    if (f.type === 'checkbox') return z.literal(true, { errorMap: () => ({ message: `${f.label}: Bestätigung erforderlich` }) });
+    if (f.type === 'checkbox') return z.literal(true, { message: `${f.label}: Bestätigung erforderlich` });
     return v.refine((x) => x !== '' && x !== undefined && x !== null, `${f.label} ist ein Pflichtfeld`);
   }
   return v.optional();
@@ -140,7 +140,7 @@ export function isFilled(v: unknown): boolean {
 
 /** Baut aus der (bereits geprüften) Formulardefinition einen strikten Validator. */
 export function buildFormValidator(schema: FormSchema) {
-  const shape: Record<string, z.ZodTypeAny> = {};
+  const shape: Record<string, z.ZodType> = {};
   for (const f of schema.fields) shape[f.name] = fieldValidator(f);
   return z
     .object(shape)

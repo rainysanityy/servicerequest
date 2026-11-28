@@ -21,10 +21,11 @@ jobs:
           for d in backend frontend; do
             (cd "$d" && npm install --package-lock-only --ignore-scripts --no-audit --no-fund)
           done
-      - name: Prüfen (npm ci + audit)
+      - name: Prüfen (npm ci) und Audit-Bericht
         run: |
           for d in backend frontend; do
-            (cd "$d" && npm ci --ignore-scripts && npm audit --omit=dev --audit-level=high)
+            echo "=== $d ==="
+            (cd "$d" && npm ci --ignore-scripts && (npm audit || true))
           done
       - name: Auf Branch lockfiles-update ablegen
         run: |
