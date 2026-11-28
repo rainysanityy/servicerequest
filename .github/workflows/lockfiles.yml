@@ -1,0 +1,36 @@
+name: Lockfiles
+
+# Erzeugt/aktualisiert package-lock.json für backend und frontend (reproduzierbare Builds, npm ci).
+# Manuell starten: Actions → Lockfiles → Run workflow. Ergebnis: Branch "lockfiles-update".
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: package-lock.json erzeugen
+        run: |
+          for d in backend frontend; do
+            (cd "$d" && npm install --package-lock-only --ignore-scripts --no-audit --no-fund)
+          done
+      - name: Prüfen (npm ci + audit)
+        run: |
+          for d in backend frontend; do
+            (cd "$d" && npm ci --ignore-scripts && npm audit --omit=dev --audit-level=high)
+          done
+      - name: Auf Branch lockfiles-update ablegen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git checkout -B lockfiles-update
+          git add backend/package-lock.json frontend/package-lock.json
+          git commit -m "package-lock.json aktualisiert" || echo "keine Änderungen"
+          git push -f origin lockfiles-update
